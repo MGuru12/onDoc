@@ -5,18 +5,22 @@ import { useUser } from '../../utils/Providers';
 
 const KnowledgeBase = () => {
   const { projId } = useParams();
+  const [proj, setProj] = useState({});
   const [docs, setDocs] = useState([]);
   const [selected, setSelected] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { accessToken } = useUser();
-
+  
   useEffect(() => {
     const fetchDeployedDocs = async () => {
       try {
         const res = await api.get(`/docs?projId=${projId}`, {
           headers: { 'x-access-token': accessToken },
         });
-        const deployed = res.data.filter(doc => doc.deploy);
+        console.log(res.data.proj[0]);
+        
+        setProj(res.data.proj[0]);
+        const deployed = res.data.docs.filter(doc => doc.deploy);
         setDocs(deployed);
         setSelected(deployed[0] || null);
       } catch (err) {
@@ -39,7 +43,7 @@ const KnowledgeBase = () => {
       if (item.ref && map[item.ref]) {
         map[item.ref].children.push(map[item._id]);
       } else {
-        roots.push(map[item._id]);
+        roots.push(map[item._id]); 
       }
     });
 
@@ -85,7 +89,7 @@ const KnowledgeBase = () => {
     <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-violet-100 via-purple-100 to-yellow-50 font-[Quicksand] overflow-hidden">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-violet-200 shadow-md">
-        <h2 className="text-xl font-bold text-violet-900">📚 OnDoc</h2>
+        <h2 className="text-xl font-bold text-violet-900">{proj.title}</h2>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="text-violet-900 text-2xl focus:outline-none"
@@ -95,15 +99,20 @@ const KnowledgeBase = () => {
       </div>
 
       {/* Sidebar */}
-      <aside
-        className={`
-          fixed md:relative top-0 left-0 z-20 bg-violet-100 shadow-inner border-r border-violet-300
-          transform md:translate-x-0 transition-transform duration-300 ease-in-out
-          w-64 h-full overflow-auto p-6
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <h2 className="text-2xl font-bold mb-6 text-violet-900 hidden md:block">📚 OnDoc</h2>
+     <aside
+  className={`
+    bg-violet-100 shadow-inner border-r border-violet-300 w-64 h-full overflow-auto p-6 pt-20
+    transition-transform duration-300 ease-in-out
+
+    md:relative md:translate-x-0 md:transform-none md:z-auto md:top-auto md:left-auto
+
+    fixed top-0 left-0 z-40 transform
+    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+  `}
+>
+
+
+        <h2 className="text-2xl font-bold mb-6 text-violet-900 hidden md:block">{proj.title}</h2>
         {renderSidebarTree(buildTree(docs))}
       </aside>
 
@@ -116,7 +125,7 @@ const KnowledgeBase = () => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-10 overflow-auto bg-purple-50 rounded-t-3xl md:rounded-none transition-all duration-300">
+      <main className="flex-1 p-8 md:p-10 overflow-auto bg-purple-50 rounded-t-3xl md:rounded-none transition-all duration-300">
         {selected ? (
           <div className="prose max-w-none p-6 bg-white rounded-[2rem] shadow-[6px_6px_12px_#ccc,-6px_-6px_12px_#fff] transition-transform duration-300 hover:scale-[1.01]">
             {/* <h1 className="text-violet-700 font-bold">{selected.title}</h1> */}

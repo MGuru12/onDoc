@@ -2,107 +2,110 @@ import React, { useEffect, useState } from 'react';
 import api from '../../utils/Axios';
 import { useUser } from '../../utils/Providers';
 import { RefreshAccessToken } from '../../utils/Services';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Projects = () => {
   const [projects, setProjects] = useState([]);
   const { accessToken } = useUser();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const getAllProj = async () => {
-      try {
-        const response = await api.get('/project/all', {
-          headers: {
-            'x-access-token': accessToken,
-          },
-        });
-        setProjects(response.data);
-      } catch (err) {
-        console.error(err);
-        if(err.response.status && err.response.status===498)
-          {
-            const refresh = confirm("Your Access token expired or invalid. Click ok to Generate new one");
-            if(refresh) {
-              const success = await RefreshAccessToken();
-              if(success) alert("New access token generated successfully");
-              else if(success==null) alert("Login first");
-              else if(!success) alert("Cant generate new access token");
-            }
-          }
-      }
-    };
-
-    getAllProj();
-  }, []);
-
-  const addProj = async () => {
+  const fetchProjects = async (retry = false) => {
     try {
-      let title = prompt('Enter the new project title');
-      if (!title || title.trim() === '') return alert('Title should not be empty');
-
-      await api.post(
-        '/project',
-        { title },
-        {
-          headers: {
-            'x-access-token': accessToken,
-          },
-        }
-      );
-      alert('New project created successfully');
-      // Refresh projects
-      const response = await api.get('/project/all', {
+      const res = await api.get('/project/all', {
         headers: { 'x-access-token': accessToken },
       });
-      setProjects(response.data);
+      setProjects(res.data);
     } catch (err) {
       console.error(err);
-      alert('Something went wrong');
+
+      if (err.response?.status === 498 && !retry) {
+        const refreshed = await RefreshAccessToken();
+        if (refreshed) {
+          console.log('Access token refreshed.');
+          await fetchProjects(true); // Retry once after refresh
+        } else {
+          alert('Session expired. Please login again.');
+          navigate('/login');
+        }
+      }
     }
   };
 
-  const delProj = async (_id) => {
+  useEffect(() => {
+    if (accessToken) fetchProjects();
+  }, [accessToken]);
+
+  const createProject = async () => {
+    const title = prompt('Enter project title');
+    if (!title || title.trim() === '') return alert('Title cannot be empty');
+
     try {
-      await api.delete(`/project/?projId=${_id}`, {
-        headers: {
-          'x-access-token': accessToken,
-        },
+      await api.post('/project', { title }, {
+        headers: { 'x-access-token': accessToken },
       });
-      alert('Project deleted successfully');
-      // Refresh projects
-      setProjects(projects.filter((p) => p._id !== _id));
+      fetchProjects();
     } catch (err) {
       console.error(err);
-      alert('Something went wrong');
+      alert('Failed to create project');
+    }
+  };
+
+  const deleteProject = async (_id) => {
+    try {
+      await api.delete(`/project/?projId=${_id}`, {
+        headers: { 'x-access-token': accessToken },
+      });
+      setProjects((prev) => prev.filter((p) => p._id !== _id));
+    } catch (err) {
+      console.error(err);
+      alert('Could not delete project');
     }
   };
 
   return (
-    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {projects.map((proj) => (
-        <Link to={`/project/doc/${proj._id}`}>
+    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-purple-100 to-yellow-50 p-6 font-[Quicksand]">
+      <div className="flex flex-wrap gap-6 justify-start">
+        {projects.map((proj) => (
           <div
-          key={proj._id}
-          className="bg-white shadow-md rounded-lg p-4 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300"
+            key={proj._id}
+            onClick={() => navigate(`/project/doc/${proj._id}`)}
+            className="cursor-pointer w-full sm:w-[47%] md:w-[30%] lg:w-[22%] bg-white p-6 rounded-2xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between group"
           >
-            <div className="text-lg font-semibold text-gray-800 mb-2">{proj.title}</div>
+            <div className="flex justify-between items-start">
+              <h2 className="text-lg font-semibold text-violet-900 truncate">{proj.title}</h2>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteProject(proj._id);
+                }}
+                className="text-red-500 hover:text-red-700 text-sm"
+                title="Delete Project"
+              >
+                🗑️
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-2 group-hover:text-gray-700 transition">
+              Click to manage documents →
+            </p>
             <button
-              onClick={() => delProj(proj._id)}
-              className="self-end text-red-500 hover:text-red-700 transition-colors duration-200"
-              title="Delete Project"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/project/knowledgebase/${proj._id}`);
+              }}
+              className="text-md font-semibold text-violet-600 hover:text-violet-400"
             >
-              🗑️
+              Visit Knowledge Base
             </button>
           </div>
-        </Link>
-      ))}
+        ))}
 
-      <div
-        onClick={addProj}
-        className="cursor-pointer bg-gray-100 hover:bg-gray-200 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-4xl font-bold text-gray-600 transition-colors duration-300"
-        title="Add New Project"
-      >
-        +
+        <div
+          onClick={createProject}
+          className="cursor-pointer w-full sm:w-[47%] md:w-[30%] lg:w-[22%] p-6 rounded-2xl border-4 border-dashed border-violet-300 flex items-center justify-center text-violet-500 hover:bg-violet-100 hover:border-violet-400 hover:scale-[1.02] transition-all duration-300 text-4xl font-bold"
+          title="Add New Project"
+        >
+          +
+        </div>
       </div>
     </div>
   );

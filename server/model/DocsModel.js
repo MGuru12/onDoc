@@ -29,6 +29,11 @@ const docsSchema = new mongoose.Schema({
     builtIn: {
         type: Boolean,
         default: false,
+    },
+    visibility: {
+        type: String,
+        enum: ["private", "public"],
+        default: "public",
     }
 
 });
