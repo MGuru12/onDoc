@@ -6,6 +6,10 @@ const projectSchema = new mongoose.Schema({
         type: String,
         requires: true,
     },
+    description: {
+        type: String,
+        default: "",
+    }
 });
 
 const projectModel = (dbName) => {

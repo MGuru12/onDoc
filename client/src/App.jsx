@@ -7,6 +7,8 @@ import Projects from './pages/protectedRoutes/Projects';
 import ProtectedRoute from './pages/ProtectedRoute';
 import DocEditor from './pages/protectedRoutes/DocEditor';
 import KnowledgeBase from './pages/protectedRoutes/KnowledgeBase';
+import KbSettings from './pages/protectedRoutes/KbSettings';
+import AppBar from './pages/AppBar';
 
 function AuthLayout() {
   return <Outlet />;
@@ -19,6 +21,9 @@ function ProjectLayout() {
 function App() {
   return (
     <BrowserRouter>
+  <div className="min-h-screen flex flex-col">
+    <AppBar />
+    <main className="flex-grow">
       <Routes>
         <Route path='/' element={<Home />} />
 
@@ -28,16 +33,21 @@ function App() {
           <Route path='login' element={<Login />} />
         </Route>
 
-        <Route path='/project' element={<ProtectedRoute><ProjectLayout/></ProtectedRoute>}>
+        <Route path='/project' element={<ProtectedRoute><ProjectLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="list" replace />} />
           <Route path='list' element={<Projects />} />
           <Route path='doc/:projId' element={<DocEditor />} />
           <Route path='KnowledgeBase/:projId' element={<KnowledgeBase />} />
+          <Route path='KnowledgeBase/:projId/settings' element={<KbSettings />} />
         </Route>
 
         <Route path='*' element={<NotFound />} />
       </Routes>
-    </BrowserRouter>
+    </main>
+  </div>
+</BrowserRouter>
+
+
   );
 }
 

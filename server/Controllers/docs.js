@@ -1,4 +1,5 @@
 const docsModel = require("../model/DocsModel");
+const projectModel = require("../model/ProjectModel");
 const { status400, status500 } = require("../utils/const");
 
 const getDocs = async (req, res) => {
@@ -7,9 +8,11 @@ const getDocs = async (req, res) => {
     const { projId } = req.query;
     if (!projId) return res.status(400).json({ message: status400 });
 
+    const Proj = projectModel(_id);
     const Docs = docsModel(_id);
+    const proj = await Proj.find({_id: projId});
     const docs = await Docs.find({ proj: projId });
-    res.json(docs);
+    res.json({proj,docs});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: status500 });
