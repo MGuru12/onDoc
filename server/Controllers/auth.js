@@ -5,7 +5,6 @@ const bcrypt = require('bcrypt');
 const axios = require("axios");
 const { status400, status401, status500 } = require("../utils/const");
 const userModel = require("../model/UserModel");
-const { sendMail } = require("../utils/nodeMailer");
 
 const JWT_access_SECRET = 'your_secret_key';
 const JWT_refresh_SECRET = 'your_secret_key';
