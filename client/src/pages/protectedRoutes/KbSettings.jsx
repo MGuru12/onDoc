@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../../utils/Providers';
 import api from '../../utils/Axios';
@@ -8,14 +8,14 @@ const KbSettings = () => {
   const { accessToken } = useUser();
   const navigate = useNavigate();
 
-  const [selected, setSelected] = useState('users'); // 'users', 'edit', 'delete'
+  const [selected, setSelected] = useState('users');
   const [users, setUsers] = useState([]);
-  const [newUser, setNewUser] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserName, setNewUserName] = useState('');
   const [projData, setProjData] = useState({ title: '', description: '' });
 
   const headers = { headers: { 'x-access-token': accessToken } };
 
-  // Dummy sidebar tree-like structure
   const sidebarItems = [
     { key: 'users', title: '👥 Manage Users' },
     { key: 'edit', title: '📝 Edit Project' },
@@ -23,22 +23,32 @@ const KbSettings = () => {
   ];
 
   const handleAddUser = async () => {
+    if (!newUserEmail || !newUserName) return alert('Please provide both name and email.');
+
     try {
-      await api.post(`proj/${projId}/member/add`, { email: newUser }, headers);
-      setNewUser('');
+      await api.post(`/member/${projId}/invite`, {
+        email: newUserEmail,
+        uName: newUserName,
+        password: 'TempPass123'  // You can make this dynamic later
+      }, headers);
+      setNewUserEmail('');
+      setNewUserName('');
       alert('User invited!');
+      getUsers();
     } catch (err) {
       console.error(err);
-      alert('Failed to invite user.');
+      alert(err?.response?.data?.message || 'Failed to invite user.');
     }
   };
 
-  const handleDeleteUser = async (_id) => {
+  const handleDeleteUser = async (userId) => {
     try {
-      await api.delete(`proj/${projId}/member/delete?_id=${_id}`, headers);
+      await api.delete(`/member/?userId=${userId}`, headers);
       alert('User deleted!');
+      getUsers();
     } catch (err) {
       console.error(err);
+      alert('Failed to delete user.');
     }
   };
 
@@ -67,22 +77,41 @@ const KbSettings = () => {
     }
   };
 
+  const getUsers = async () => {
+    try {
+      const response = await api.get(`/member/${projId}`, headers);
+      setUsers(response.data);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to fetch users.');
+    }
+  };
+
+  useEffect(() => {
+    getUsers();
+  }, [projId]);
+
   const renderContent = () => {
     switch (selected) {
       case 'users':
         return (
           <div>
             <h2 className="text-xl font-bold mb-4">Manage Users</h2>
-            <div className="flex gap-3 mb-4">
+            <div className="flex flex-col md:flex-row gap-3 mb-4">
               <input
-                value={newUser}
-                onChange={(e) => setNewUser(e.target.value)}
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+                placeholder="User name"
+                className="border p-2 rounded w-full"
+              />
+              <input
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
                 placeholder="User email"
                 className="border p-2 rounded w-full"
               />
               <button onClick={handleAddUser} className="bg-violet-500 text-white px-4 rounded">Invite</button>
             </div>
-            {/* Placeholder user list */}
             <ul>
               {users.map((user) => (
                 <li key={user._id} className="flex justify-between items-center mb-2 bg-violet-100 p-2 rounded">
@@ -132,7 +161,6 @@ const KbSettings = () => {
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-violet-100 via-purple-100 to-yellow-50 font-[Quicksand] overflow-hidden">
-      {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-violet-200 shadow-md">
         <button
           onClick={() => navigate(`/knowledgebase/${projId}`)}
@@ -143,18 +171,16 @@ const KbSettings = () => {
         <h2 className="text-xl font-bold text-violet-900">⚙️ Settings</h2>
       </div>
 
-      {/* Sidebar */}
       <aside className="w-64 p-6 bg-violet-100 shadow-inner border-r border-violet-300 overflow-auto">
         <h2 className="text-2xl font-bold mb-6 text-violet-900 hidden md:block">⚙️ Settings</h2>
         {sidebarItems.map((item) => (
           <div
             key={item.key}
             onClick={() => setSelected(item.key)}
-            className={`
-              cursor-pointer px-4 py-2 my-1 rounded-2xl transition-all
+            className={`cursor-pointer px-4 py-2 my-1 rounded-2xl transition-all
               ${selected === item.key
-                ? 'bg-violet-300 text-violet-900 shadow-lg'
-                : 'bg-violet-100 text-violet-800 hover:bg-violet-200'}
+              ? 'bg-violet-300 text-violet-900 shadow-lg'
+              : 'bg-violet-100 text-violet-800 hover:bg-violet-200'}
             `}
           >
             {item.title}
@@ -162,7 +188,6 @@ const KbSettings = () => {
         ))}
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 p-4 md:p-10 overflow-auto bg-purple-50 rounded-t-3xl md:rounded-none transition-all duration-300">
         <div className="prose max-w-none p-6 bg-white rounded-[2rem] shadow-[6px_6px_12px_#ccc,-6px_-6px_12px_#fff]">
           {renderContent()}

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const db = require("../db/configDB");
 
 const userSchema = new mongoose.Schema({
+
     username: {
         type: String,
         required: true,
@@ -13,7 +14,15 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-    }
+    },
+    proj: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Project',
+    },
+    inviteToken: {
+        type: String,
+        default: null,
+    } 
 });
 
 const userModel = (dbName) => {
