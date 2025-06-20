@@ -38,7 +38,7 @@ const convertToJSX = ({editorData}) => {
                 convertedHtml += "</ol>";
               }
             else {
-              convertedHtml += "<ul>";
+              convertedHtml += "<ul class='list-disc'>";
               block.data.items.forEach(function(li) {
                 convertedHtml += `<li>${li}</li>`;
               });

@@ -4,8 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --force",
+    "start": "vite",
+    "start:dev": "vite --mode dev",
+    "start:prod": "vite --mode prod",
+    "dev": "vite",
     "build": "vite build",
+    "build:prod": "vite build --mode prod",
+    "build:development": "vite build --mode dev",   
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -30,6 +35,7 @@
     "@tailwindcss/vite": "^4.1.8",
     "axios": "^1.9.0",
     "dexie": "^4.0.11",
+    "dotenv": "^16.5.0",
     "editorjs-color-picker": "^1.0.8",
     "editorjs-header-with-alignment": "^1.0.1",
     "editorjs-text-alignment-blocktune": "^1.0.3",

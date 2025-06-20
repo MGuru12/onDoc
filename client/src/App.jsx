@@ -10,6 +10,7 @@ import KnowledgeBase from './pages/protectedRoutes/KnowledgeBase';
 import KbSettings from './pages/protectedRoutes/KbSettings';
 import AppBar from './pages/AppBar';
 
+
 function AuthLayout() {
   return <Outlet />;
 }

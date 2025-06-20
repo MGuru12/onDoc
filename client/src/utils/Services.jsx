@@ -72,7 +72,7 @@ export const sendOtp = async (otp, toAddress, name) => {
       html
     };
 
-    await axios.post("https://send.api.mailtrap.io/api/send", body, {
+    await axios.post(process.env.VITE_MAIL_API, body, {
       headers: {
         "Content-Type": "application/json",
         "Api-Token": "ce0f2b6b7bdd6580c971fea3f9bdcecc"

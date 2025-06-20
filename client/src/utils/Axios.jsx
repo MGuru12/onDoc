@@ -4,7 +4,7 @@ import { useUser } from './Providers';
 import db from '../db/Dexiedb';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001',
+  baseURL: process.env.VITE_API_URL,
 });
 
 // Axios interceptor setup

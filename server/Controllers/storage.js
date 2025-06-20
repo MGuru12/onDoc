@@ -1,4 +1,11 @@
 const path = require('path');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Handle file upload
 exports.uploadFile = (req, res) => {
@@ -14,6 +21,17 @@ exports.uploadFile = (req, res) => {
     }
   });
 };
+
+exports.deleteCloudinaryMedia = async (req, res) => {
+  const { publicId, resource_type } = req.body;
+
+  try {
+    const result = await cloudinary.uploader.destroy(publicId, { resource_type });
+    res.json({ success: true, result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+}
 
 // (Optional) Handle file retrieval
 exports.getFile = (req, res) => {
