@@ -4,9 +4,9 @@
   "description": "onDoc node express server",
   "main": "index.js",
   "scripts": {
-    "start": "set NODE_ENV=default && npx nodemon index.js",
-    "start:dev": "set NODE_ENV=dev && npx nodemon index.js",
-    "start:prod": "set NODE_ENV=prod && npx nodemon index.js",
+    "start": "cross-env NODE_ENV=default node index.js",
+  "start:dev": "cross-env NODE_ENV=dev node index.js",
+  "start:prod": "cross-env NODE_ENV=prod node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -24,6 +24,7 @@
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
     "crypto": "^1.0.1",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
