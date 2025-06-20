@@ -4,8 +4,12 @@ const bodyparser = require("body-parser");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
-require("./db/configDB");
-console.log(`Accessed ${process.env.MODE} mode env variables`);
+if(process.env.NODE_ENV!=='prod') {
+    require("./db/configDB");
+}
+// require("./db/configDB");
+
+console.log(`Accessed ${process.env.NODE_ENV} mode env variables`);
 
 const app = express();
 app.use(bodyparser.urlencoded({ extended: true }));
