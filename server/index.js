@@ -5,6 +5,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 require("./db/configDB");
+console.log(`Accessed ${process.env.MODE} mode env variables`);
 
 const app = express();
 app.use(bodyparser.urlencoded({ extended: true }));
@@ -19,7 +20,7 @@ const docsRoute = require("./Routes/docs");
 const fileRoutes = require("./Routes/storage");
 const member = require("./Routes/member");
 
-app.get('/', (req,res)=>{res.json({message: "Welcome to onDoc server"})});
+app.get('/', (req,res)=>{res.json({message: `Welcome to onDoc server and running mode: ${process.env.MODE}`})});
 
 app.use('/file', fileRoutes);
 
