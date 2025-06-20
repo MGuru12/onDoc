@@ -1,14 +1,13 @@
-require("./env/env");
+if(process.env.NODE_ENV!=='prod') {
+    require("./env/env");
+}
+// require("./env/env");
 const express = require("express");
 const bodyparser = require("body-parser");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
-if(process.env.NODE_ENV!=='prod') {
-    require("./db/configDB");
-}
-// require("./db/configDB");
-
+require("./db/configDB");
 console.log(`Accessed ${process.env.NODE_ENV} mode env variables`);
 
 const app = express();
