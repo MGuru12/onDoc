@@ -42,7 +42,7 @@ const inviteUser = async (registerLink, email, name) => {
         html
         };
 
-        return await axios.post("https://send.api.mailtrap.io/api/send", payload, {
+        return await axios.post(process.env.MAIL_API, payload, {
               headers: {
                 "Content-Type": "application/json",
                 "Api-Token": 'ce0f2b6b7bdd6580c971fea3f9bdcecc'

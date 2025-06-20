@@ -20,8 +20,16 @@ class MediaTool {
     this.config = config || {};
     
     // API endpoints
-    this.uploadEndpoint = this.config.uploadEndpoint || 'http://localhost:3001/file/upload';
-    this.fileBaseUrl = this.config.fileBaseUrl || 'http://localhost:3001/file/';
+    this.uploadEndpoint = `${process.env.VITE_API_URL}/file/upload`;
+    this.fileBaseUrl = `${process.env.VITE_API_URL}/file/`;
+    this.deleteEndpoint = `${process.env.VITE_API_URL}/file/delete`;
+
+    if(process.env.VITE_MODE !== 'prod')
+      {
+        this.uploadEndpoint = process.env.VITE_CLOUDINARY_URL;
+        this.uploadPreset = process.env.VITE_CLOUDINARY_PRESET;
+      }
+
     
     this.data = {
       url: data.url || '',
@@ -127,43 +135,65 @@ class MediaTool {
   }
 
   async _uploadFile(file) {
-    this._showLoader();
+  this._showLoader();
+
+  try {
+    console.log(process.env.VITE_MODE);
     
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(this.uploadEndpoint, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+      if(process.env.VITE_MODE==='prod') {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(this.uploadEndpoint, {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+        const result = await response.json();
+        console.log("result");
+        console.log(result.file.url);
+        const fileName = result.filename || result.fileName || file.name;
+        const fileUrl = result.file.url;
+        this.data.url = fileUrl;
+        this.data.fileName = fileName;
+        this.data.type = file.type.startsWith('video/') ? 'video' : 'image';
+        this._createMedia(fileUrl);
+        this._hideLoader();
       }
-
-      const result = await response.json();
-      console.log("result");
-      console.log(result.file.url);
-      
-      const fileName = result.filename || result.fileName || file.name;
-      const fileUrl = result.file.url;
-      
-      this.data.url = fileUrl;
-      this.data.fileName = fileName;
-      this.data.type = file.type.startsWith('video/') ? 'video' : 'image';
-      
-      this._createMedia(fileUrl);
-      this._hideLoader();
+      else {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', this.uploadPreset);
+        const response = await fetch(this.uploadEndpoint, {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+        const result = await response.json();
+        const fileUrl = result.secure_url;
+        const fileType = file.type.startsWith('video/') ? 'video' : 'image';
+        const fileName = result.original_filename;
+        const publicId = result.public_id;
+        this.data.url = fileUrl;
+        this.data.fileName = fileName;
+        this.data.type = fileType;
+        this.data.publicId = publicId;
+        this._createMedia(fileUrl);
+        this._hideLoader();
+      }
     } catch (error) {
-      console.error('Upload error:', error);
-      this._hideLoader();
-      this.api.notifier.show({
-        message: `Upload failed: ${error.message}`,
-        style: 'error'
-      });
-    }
+    console.error('Upload error:', error);
+    this._hideLoader();
+    this.api.notifier.show({
+      message: `Upload failed: ${error.message}`,
+      style: 'error'
+    });
   }
+}
+
 
   _loadByUrl(url) {
     this._showLoader();
@@ -230,7 +260,55 @@ class MediaTool {
 
     this.wrapper.innerHTML = '';
     this.wrapper.appendChild(mediaWrapper);
+
+    if (this.data.publicId && !this.readOnly) {
+      const deleteButton = this._make('button', 'cdx-media__delete-button');
+      deleteButton.textContent = 'Delete Media';
+      deleteButton.addEventListener('click', () => this._deleteFromCloudinary());
+
+      mediaWrapper.appendChild(deleteButton);
+    }
+
   }
+
+  async _deleteFromCloudinary() {
+    if (!this.data.publicId) return;
+
+    try {
+      this._showLoader();
+
+      const resourceType = this.data.type === 'video' ? 'video' : 'image'
+
+      const response = await fetch(this.deleteEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicId: this.data.publicId, resource_type: resourceType })
+      });
+
+      if (!response.ok) throw new Error('Failed to delete media');
+
+      // Reset block data
+      this.data = {
+        url: '',
+        caption: '',
+        type: 'image',
+        fileName: '',
+        publicId: ''
+      };
+
+      this.wrapper.innerHTML = '';
+      this._createUploader();
+    } catch (err) {
+      console.error(err);
+      this.api.notifier.show({
+        message: `Delete failed: ${err.message}`,
+        style: 'error'
+      });
+    } finally {
+      this._hideLoader();
+    }
+  }
+
 
   _showLoader() {
     const loader = this.wrapper.querySelector(`.${this.CSS.loader}`);

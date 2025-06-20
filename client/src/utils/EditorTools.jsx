@@ -116,8 +116,11 @@ export const tools = {
   media: {
       class: MediaTool,
       config: {
-        uploadEndpoint: 'http://localhost:3001/file/upload',
-        fileBaseUrl: 'http://localhost:3001/file/',
+        // uploadEndpoint: 'http://localhost:3001/file/upload',
+        // fileBaseUrl: 'http://localhost:3001/file/',
+        // uploadEndpoint: process.env.VITE_CLOUDINARY_URL,
+        // uploadPreset: process.env.VITE_CLOUDINARY_PRESET,
+        // deleteEndpoint: `${process.env.VITE_API_URL}/file/delete`,
       }
     },
 };
@@ -265,18 +268,40 @@ export const convertToJsxString = (blocks) => {
         }
         break;
 
-      case "list":
-        if (block.data.style === "checklist") {
-          convertedHtml += `<ul class="space-y-2 my-4 ${alignClass}">`;
+      case "checklist":
+        convertedHtml += `<ul class="space-y-2 my-4 ${alignClass}">`;
           block.data.items.forEach((item) => {
             convertedHtml += `
               <li class="flex items-center space-x-2">
-                <input type="checkbox" ${item.meta?.checked ? "checked" : ""} disabled class="accent-blue-500 cursor-default" />
+                <input type="checkbox" ${item.checked ? "checked" : ""} disabled class="accent-blue-500 cursor-default" />
+                <span class="text-gray-700">${item.text}</span>
+              </li>`;
+          });
+          convertedHtml += `</ul>`;
+        break;
+
+      case "list":
+        if (block.data.style === "unordered") {
+          convertedHtml += `<ul class="list-disc pl-6 my-4 ${alignClass}">`;
+          block.data.items.forEach((item) => {
+            convertedHtml += `
+              <li class="items-center space-x-2">
                 <span class="text-gray-700">${item.content}</span>
               </li>`;
           });
           convertedHtml += `</ul>`;
-        } else {
+          }
+        else if (block.data.style === "ordered") {
+          convertedHtml += `<ol class="list-decimal pl-6 my-4 ${alignClass}">`;
+          block.data.items.forEach((item) => {
+            convertedHtml += `
+              <li class="items-center space-x-2">
+                <span class="text-gray-700">${item.content}</span>
+              </li>`;
+          });
+          convertedHtml += `</ol>`;
+          }
+         else {
           convertedHtml += `<div class="${alignClass}">` + renderList(block.data.items, block.data.style) + `</div>`;
         }
         break;
