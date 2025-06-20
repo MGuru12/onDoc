@@ -23,12 +23,17 @@ class MediaTool {
     this.uploadEndpoint = `${process.env.VITE_API_URL}/file/upload`;
     this.fileBaseUrl = `${process.env.VITE_API_URL}/file/`;
     this.deleteEndpoint = `${process.env.VITE_API_URL}/file/delete`;
-
-    if(process.env.VITE_MODE !== 'prod')
+    console.log(process.env.VITE_MODE);
+    
+    console.log(this.uploadEndpoint);
+    console.log(process.env.VITE_MODE=== 'PROD');
+    
+    if(process.env.VITE_MODE === 'PROD')
       {
         this.uploadEndpoint = process.env.VITE_CLOUDINARY_URL;
         this.uploadPreset = process.env.VITE_CLOUDINARY_PRESET;
       }
+console.log(this.uploadEndpoint);
 
     
     this.data = {
@@ -138,9 +143,7 @@ class MediaTool {
   this._showLoader();
 
   try {
-    console.log(process.env.VITE_MODE);
-    
-      if(process.env.VITE_MODE==='prod') {
+      if(process.env.VITE_MODE!=='PROD') {
         const formData = new FormData();
         formData.append('file', file);
         const response = await fetch(this.uploadEndpoint, {
