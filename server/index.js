@@ -15,7 +15,7 @@ app.use(bodyparser.urlencoded({ extended: true }));
 app.use(bodyparser.json());
 app.use(cors({origin:'http://localhost:5173', credentials: true, exposedHeaders: ['x-access-token', 'cookie']}));
 app.use(cookieParser());
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 const authRoute = require("./Routes/auth");
 const projectRoute = require("./Routes/project");
