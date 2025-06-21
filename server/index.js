@@ -13,6 +13,7 @@ console.log(`Accessed ${process.env.NODE_ENV} mode env variables`);
 const app = express();
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(bodyparser.json());
+app.use(cors({origin:['http://localhost:5173','https://on-doc-beta.vercel.app'], credentials: true, exposedHeaders: ['x-access-token', 'cookie']}));
 app.use(cookieParser());
 const port = process.env.PORT || 3001;
 
