@@ -1,6 +1,6 @@
 const docsModel = require("../model/DocsModel");
 const projectModel = require("../model/ProjectModel");
-const { status500, status400 } = require("../utils/const");
+const { status500, status400, blocks } = require("../utils/const");
 
 const addProj = async(req, res) => {
     try
@@ -15,14 +15,7 @@ const addProj = async(req, res) => {
         if(await Proj.findOne({title})) return res.status(409).json({message: `Project ${title} already exists`});
 
         const proj = await Proj.create({title});
-        await Docs.create({proj: proj._id, title: "root", path: '/', content: {
-            blocks: [
-            {
-                type: "paragraph",
-                data: { text: "Welcome to the root page" }
-            }
-            ]
-        }, builtIn: true});
+        await Docs.create({proj: proj._id, title: "root", path: '/', content: {blocks}, builtIn: true});
 
         res.status(201).json({message: `project ${title} created successfully`});
     }

@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:prod": "vite build --mode prod",
-    "build:development": "vite build --mode dev",   
+    "build:development": "vite build --mode dev",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -42,6 +42,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
+    "react-toastify": "^11.0.5",
     "tailwindcss": "^4.1.8"
   },
   "devDependencies": {

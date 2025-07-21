@@ -3,6 +3,7 @@ import api from '../../utils/Axios';
 import { useUser } from '../../utils/Providers';
 import { RefreshAccessToken } from '../../utils/Services';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const Projects = () => {
   const [projects, setProjects] = useState([]);
@@ -44,9 +45,10 @@ const Projects = () => {
         headers: { 'x-access-token': accessToken },
       });
       fetchProjects();
+      toast.success('Project created successfully');
     } catch (err) {
       console.error(err);
-      alert('Failed to create project');
+      toast.error('Failed to create project');
     }
   };
 
@@ -56,9 +58,10 @@ const Projects = () => {
         headers: { 'x-access-token': accessToken },
       });
       setProjects((prev) => prev.filter((p) => p._id !== _id));
+      toast.success('Project deleted successfully');
     } catch (err) {
       console.error(err);
-      alert('Could not delete project');
+      toast.error('Could not delete project');
     }
   };
 

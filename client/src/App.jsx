@@ -1,5 +1,6 @@
 import Home from './pages/Home';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 import NotFound from './pages/NotFound';
 import Registration from './pages/auth/Registration';
 import Login from './pages/auth/Login';
@@ -21,7 +22,8 @@ function ProjectLayout() {
 
 function App() {
   return (
-    <BrowserRouter>
+<>
+<BrowserRouter>
   <div className="min-h-screen flex flex-col">
     <AppBar />
     <main className="flex-grow">
@@ -47,7 +49,8 @@ function App() {
     </main>
   </div>
 </BrowserRouter>
-
+<ToastContainer/>
+</>
 
   );
 }
