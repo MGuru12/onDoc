@@ -50,8 +50,12 @@ const Login = async(req, res) => {
         if(!clientData) return res.status(404).json({message: `Client email ${email} not found`});
         if(!(await bcrypt.compare(pwd, clientData.password))) return res.status(401).json({message: status401});
 
-        const accessToken = jwt.sign({_id}, JWT_access_SECRET, {expiresIn: accessExpiresIn});
-        const refreshToken = jwt.sign({_id}, JWT_refresh_SECRET, {expiresIn: refreshExpiresIn});
+        console.log(usrType);
+        
+        const accessToken = jwt.sign({_id, usrId: clientData._id, usrType}, JWT_access_SECRET, {expiresIn: accessExpiresIn});
+        const refreshToken = jwt.sign({_id, usrId: clientData._id, usrType}, JWT_refresh_SECRET, {expiresIn: refreshExpiresIn});
+const decodedData = jwt.verify(accessToken, JWT_access_SECRET);
+console.log(decodedData);
 
         const data = {_i: clientData._id, n: clientData.username, e: clientData.email};
 
@@ -79,7 +83,7 @@ const verifyAccessToken = async(req, res, next) => {
         
         const decodedData = jwt.verify(accessToken, JWT_access_SECRET);
         
-        req.JWT = {_id: decodedData._id};
+        req.JWT = {_id: decodedData._id, usrId: decodedData.usrId, usrType: decodedData.usrType};
         next();
     }
     catch(err)
@@ -181,5 +185,30 @@ const verifyMail = async (req, res) => {
   }
 };
 
+const verifyInvite = async(req, res) => {
+  try
+  {
+    const { _id, inviteToken } = req.params;
+    const {pwd} = req.body;
+    if(!_id || !inviteToken ) return res.status(400).json({message: status400});
 
-module.exports = {Register, Login, verifyAccessToken, refreshAccessToken, Logout, verifyMail};
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(pwd, salt);
+    
+    const User = userModel(_id);
+    const existingUser = await User.findOne({inviteToken});
+    if(!existingUser) return res.status(404).json({message: "Invite token not found or already used"});
+    existingUser.password = hashedPassword;
+    existingUser.inviteToken = null; // Clear the invite token after verification
+    await existingUser.save();
+    res.status(200).json({message: "Invite verified successfully", _id});
+  }
+  catch(err)
+  {
+    console.error(err);
+    res.status(500).json({message: status500});
+  }
+};
+
+
+module.exports = {Register, Login, verifyAccessToken, refreshAccessToken, Logout, verifyMail, verifyInvite};

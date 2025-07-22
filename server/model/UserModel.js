@@ -15,14 +15,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    proj: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Project',
-    },
+    // proj: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'Project',
+    // },
     inviteToken: {
         type: String,
         default: null,
-    } 
+    }
 });
 
 const userModel = (dbName) => {

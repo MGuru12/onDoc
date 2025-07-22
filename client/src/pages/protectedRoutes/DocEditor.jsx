@@ -244,59 +244,74 @@ const DocEditor = () => {
 
   return (
     <div className={`flex h-screen bg-violet-50 dark:bg-violet-950 text-violet-900 dark:text-violet-100 transition-colors ${darkMode ? 'dark' : ''}`}>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden p-2 bg-violet-200 dark:bg-violet-800 rounded-lg shadow-neu-flat hover:shadow-neu-pressed transition-all duration-200"
+       <>
+    {/* Hamburger button - visible only on mobile */}
+    <button
+      onClick={() => setSidebarOpen(!sidebarOpen)}
+      className="lg:hidden relative top-4 left-4 z-50 p-2 bg-violet-200 dark:bg-violet-800 rounded-lg shadow-neu-flat hover:shadow-neu-pressed transition-all duration-200"
+      aria-label="Toggle sidebar menu"
+    >
+      <svg
+        className="w-6 h-6 text-violet-800 dark:text-violet-200"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
       >
-        <svg className="w-6 h-6 text-violet-800 dark:text-violet-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+
+    {/* Sidebar */}
+    <aside
+      className={`
+        fixed top-0 left-0 z-40 h-full w-64 bg-violet-100 p-6 pt-16 shadow-neu-inset border-r border-violet-300
+        dark:bg-violet-900 dark:border-violet-800
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:relative lg:translate-x-0 lg:transform-none
+      `}
+      aria-label="Sidebar navigation"
+    >
+      {/* Close button - mobile only */}
+      <button
+        onClick={() => setSidebarOpen(false)}
+        className="lg:hidden absolute right-4 top-4 p-2 text-violet-600 hover:text-violet-800 dark:text-violet-400"
+        aria-label="Close sidebar"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
 
-      {/* Sidebar */}
-      <div className={`
-        bg-violet-100 dark:bg-violet-900 shadow-neu-inset border-r border-violet-300 dark:border-violet-800 w-80 h-full overflow-auto p-6 pt-20
-        transition-transform duration-300 ease-in-out
-        md:relative md:translate-x-0 md:transform-none md:z-auto
-        fixed top-0 left-0 z-40 transform
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        {/* Close button for mobile */}
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="lg:hidden absolute right-4 p-2 text-violet-600 hover:text-violet-800 dark:text-violet-400"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <div className="pt-12 lg:pt-0">
-          <button
-            onClick={() => createPage()}
-            className="mb-6 w-full px-4 py-3 bg-violet-200 dark:bg-violet-800 text-violet-800 dark:text-violet-200 font-medium rounded-lg shadow-neu-flat hover:shadow-neu-pressed transition-all duration-200 font-mono"
-          >
-            + New Page
-          </button>
-          <div className="space-y-1">
-            {renderSidebar(buildTree(docs))}
-          </div>
-          <button
-            onClick={() => navigate(`/project/KnowledgeBase/${projId}/Settings`)}
-            className="absolute bottom-4 left-4 right-4 bg-violet-200 dark:bg-violet-800 text-violet-800 dark:text-violet-200 px-4 py-3 rounded-lg shadow-neu-flat hover:shadow-neu-pressed transition-all duration-200 font-medium font-mono"
-          >
-            ⚙️ Settings
-          </button>
-        </div>
-      </div>
+      {/* Sidebar content */}
+      <button
+        onClick={() => createPage()}
+        className="mb-6 w-full rounded-lg bg-violet-200 px-4 py-3 font-mono font-medium shadow-neu-flat text-violet-800 transition-all duration-200 hover:shadow-neu-pressed dark:bg-violet-800 dark:text-violet-200"
+      >
+        + New Page
+      </button>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-30"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <nav className="flex-grow overflow-y-auto space-y-1">
+        {renderSidebar(buildTree(docs))}
+      </nav>
+
+      <button
+        onClick={() => navigate(`/project/KnowledgeBase/${projId}/settings`)}
+        className="mt-4 rounded-lg bg-violet-200 px-4 py-3 font-mono font-medium shadow-neu-flat text-violet-800 transition-all duration-200 hover:shadow-neu-pressed dark:bg-violet-800 dark:text-violet-200"
+      >
+        ⚙️ Settings
+      </button>
+    </aside>
+
+    {/* Overlay for mobile */}
+    {sidebarOpen && (
+      <div
+        className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden"
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
+    )}
+  </>
 
       {/* Main Content */}
       <div className="flex-1 p-4 lg:p-6 overflow-auto relative">

@@ -1,4 +1,5 @@
 const docsModel = require("../model/DocsModel");
+const memberModel = require("../model/MemberModel");
 const projectModel = require("../model/ProjectModel");
 const { status500, status400, blocks } = require("../utils/const");
 
@@ -49,10 +50,14 @@ const delProj = async(req, res) => {
 const getAllProj = async(req, res) => {
     try
     {
-        const {_id} = req.JWT;
+        const {_id, usrId, usrType} = req.JWT;
 
+        const Member = memberModel(_id);
+        const projIds = await Member.find({userId: usrId}).distinct('projId');
+        
         const Proj = projectModel(_id);
-        res.json(await Proj.find());
+        let query = usrType === "Client" ? {} : {_id: {$in: projIds}};
+        res.json(await Proj.find(query).select('title _id').lean());
     }
     catch(err)
     {
@@ -61,4 +66,42 @@ const getAllProj = async(req, res) => {
     }
 };
 
-module.exports = {addProj, delProj, getAllProj};
+const getProjById = async(req, res) => {
+    try
+    {
+        const {projId} = req.params;
+        const {_id} = req.JWT;
+        if(!projId) return res.status(400).json({message: status400});
+
+        const Proj = projectModel(_id);
+        const proj = await Proj.findOne({_id: projId}).select('title description').lean();
+
+        res.json(proj);
+    }
+    catch(err)
+    {
+        console.error(err);
+        res.status(500).json({message: status500});
+    }
+};
+
+const updateProj = async(req, res) => {
+    try
+    {
+        const {projId} = req.params;
+        const {_id} = req.JWT;
+        const {title, description} = req.body;
+        if(!projId || !title) return res.status(400).json({message: status400});
+
+        const Proj = projectModel(_id);
+        await Proj.updateOne({_id: projId}, {title, description});
+        res.json({message: "Project updated successfully"});
+    }
+    catch(err)
+    {
+        console.error(err);
+        res.status(500).json({message: status500});
+    }
+};
+
+module.exports = {addProj, delProj, getAllProj, getProjById, updateProj};

@@ -10,6 +10,7 @@ import DocEditor from './pages/protectedRoutes/DocEditor';
 import KnowledgeBase from './pages/protectedRoutes/KnowledgeBase';
 import KbSettings from './pages/protectedRoutes/KbSettings';
 import AppBar from './pages/AppBar';
+import VerifyInvite from './pages/auth/VerifyInvite';
 
 
 function AuthLayout() {
@@ -26,7 +27,7 @@ function App() {
 <BrowserRouter>
   <div className="min-h-screen flex flex-col">
     <AppBar />
-    <main className="flex-grow">
+    <main className="flex-grow pt-16">
       <Routes>
         <Route path='/' element={<Home />} />
 
@@ -35,6 +36,8 @@ function App() {
           <Route path='registration' element={<Registration />} />
           <Route path='login' element={<Login />} />
         </Route>
+
+        <Route path='/:_id/register/:inviteToken' element={<VerifyInvite />} />
 
         <Route path='/project' element={<ProtectedRoute><ProjectLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="list" replace />} />
