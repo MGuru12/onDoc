@@ -96,12 +96,17 @@ const KnowledgeBase = () => {
               setSelected(node);
               if (window.innerWidth < 768) setSidebarOpen(false);
             }}
-            className={`flex items-center gap-2 px-3 py-1.5 my-1 rounded-xl cursor-pointer transition-all duration-200 text-sm font-medium truncate
-              ${isSelected
-                ? 'text-violet-900 bg-violet-100 shadow-inner-neu'
-                : 'text-violet-800 hover:bg-violet-50'}
-            `}
-            style={{ paddingLeft: `${level * 20 + 10}px` }}
+            className={`flex items-center gap-2 px-3 py-1.5 my-1 rounded-xl cursor-pointer transition-all duration-200 text-sm font-medium truncate ${
+              isSelected
+                ? 'bg-violet-100 shadow-inner-neu'
+                : 'hover:bg-violet-50'
+            }`}
+            style={{
+              paddingLeft: `${level * 20 + 12}px`,
+              boxShadow: isSelected
+                ? 'inset 2px 2px 4px #f0f4ff, inset -2px -2px 4px #ffffff'
+                : '3px 3px 6px #e0e7ff, -3px -3px 6px #ffffff',
+            }}
           >
             <span
               className={`transition-transform duration-200 text-xs ${
@@ -118,13 +123,13 @@ const KnowledgeBase = () => {
           {level > 0 && (
             <div
               className="absolute top-0 left-3 bottom-0 w-px bg-gradient-to-b from-transparent via-violet-200 to-transparent"
-              style={{ marginLeft: `${level * 20}px` }}
+              style={{ marginLeft: `${level * 20 + 12}px`, height: '100%' }}
             />
           )}
 
           {/* Children */}
           {hasChildren && isExpanded && (
-            <div className="pl-4 mt-0.5 transition-all duration-300 ease-in-out">
+            <div className="ml-2 border-l-2 border-violet-200 pl-2 mt-1">
               {renderSidebarTree(node.children, level + 1)}
             </div>
           )}
@@ -133,78 +138,75 @@ const KnowledgeBase = () => {
     });
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 font-[Quicksand] overflow-hidden">
-      {/* Mobile Header */}
-      <div
-        className="md:hidden flex items-center justify-between p-4 bg-violet-50 shadow-md z-30"
+    <div className="flex h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 font-[Quicksand] overflow-hidden">
+      {/* Mobile Hamburger Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-violet-50 rounded-full"
         style={{
           boxShadow: '4px 4px 8px #e0e7ff, -4px -4px 8px #ffffff',
         }}
+        aria-label="Toggle sidebar"
       >
-        <h2
-          className="text-xl font-bold text-violet-900 truncate"
-          style={{ fontFamily: 'Kaushan Script, cursive' }}
-        >
-          {proj.title || 'Knowledge Base'}
-        </h2>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="text-violet-800 hover:text-violet-900 focus:outline-none p-2 rounded-full"
-          style={{
-            boxShadow: 'inset 2px 2px 4px #f0f4ff, inset -2px -2px 4px #ffffff',
-          }}
-        >
-          ☰
-        </button>
-      </div>
+        <svg className="w-6 h-6 text-violet-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative transform transition-transform duration-300 ease-in-out 
-          w-64 h-full z-40 bg-violet-50 overflow-auto border-r border-violet-200 pt-4 pb-6 px-4
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+        className={`
+          fixed top-0 left-0 z-40 h-full w-64 p-6 pt-20 lg:pt-10 bg-violet-50 overflow-y-auto
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:relative lg:translate-x-0 lg:w-72
+        `}
         style={{
           boxShadow: 'inset 4px 4px 8px #f0f4ff, inset -4px -4px 8px #ffffff',
+          borderRadius: '0 1.5rem 1.5rem 0',
         }}
       >
+        {/* Close Button (Mobile Only) */}
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="lg:hidden absolute top-4 right-4 text-violet-600 hover:text-violet-800"
+        >
+          ✕
+        </button>
+
+        {/* Header */}
         <h2
-          className="text-2xl font-bold mb-6 text-violet-900 hidden md:block text-center"
+          className="text-2xl font-bold mb-6 text-center text-violet-900 lg:block"
           style={{ fontFamily: 'Kaushan Script, cursive' }}
         >
           {proj.title}
         </h2>
 
-        <div className="space-y-1 px-1">{renderSidebarTree(buildTree(docs))}</div>
+        {/* Navigation Tree */}
+        <nav className="space-y-1">{renderSidebarTree(buildTree(docs))}</nav>
       </aside>
 
-      {/* Mobile Backdrop */}
+      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-20 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-10 overflow-auto bg-violet-100 rounded-t-3xl md:rounded-none transition-all duration-300">
+      <main className="flex-1 p-6 overflow-auto bg-violet-100 rounded-t-3xl md:rounded-none">
         {selected ? (
           <div
-            className="prose max-w-none p-8 bg-violet-50 rounded-3xl transition-all duration-300 hover:shadow-lg"
+            className="max-w-5xl mx-auto p-8 bg-violet-50 rounded-3xl min-h-96"
             style={{
               boxShadow: '6px 6px 12px #e0e7ff, -6px -6px 12px #ffffff',
             }}
-          >
-            <div
-              className="text-violet-800 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: selected.deploy }}
-            />
-          </div>
+            dangerouslySetInnerHTML={{ __html: selected.deploy }}
+          />
         ) : (
-          <div
-            className="text-center mt-20 text-violet-700 text-lg italic"
-            style={{ fontFamily: 'Quicksand' }}
-          >
-            👈 Select a document from the sidebar to start reading!
+          <div className="flex items-center justify-center h-64 text-violet-600 italic">
+            👈 Select a document to read
           </div>
         )}
       </main>

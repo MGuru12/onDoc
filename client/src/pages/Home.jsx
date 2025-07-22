@@ -267,14 +267,14 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer
+      {/* <footer
         className="w-full bg-violet-50 py-4 text-center text-sm text-gray-500 shadow-inner"
         style={{
           borderTop: '1px solid #ddd',
         }}
       >
         © {new Date().getFullYear()} OnDoc. All rights reserved.
-      </footer>
+      </footer> */}
     </div>
   );
 };
