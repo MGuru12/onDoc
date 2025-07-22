@@ -9,6 +9,6 @@ router.post('/:projId/invite', verifyAccessToken, inviteMember);
 
 router.post('/:projId/reinvite', verifyAccessToken, ResendInviteMail);
 
-router.delete('/:projId', verifyAccessToken, deleteMember);
+router.delete('/:userId', verifyAccessToken, deleteMember);
 
 module.exports = router;

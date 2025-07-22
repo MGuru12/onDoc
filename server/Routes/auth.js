@@ -1,4 +1,4 @@
-const { Login, Register, refreshAccessToken, Logout, verifyMail } = require("../Controllers/auth");
+const { Login, Register, refreshAccessToken, Logout, verifyMail, verifyInvite } = require("../Controllers/auth");
 
 const router = require("express").Router();
 
@@ -14,5 +14,7 @@ router.post('/Refresh', refreshAccessToken);
 router.post('/verifyMail', verifyMail);
 
 router.post('/logout', Logout);
+
+router.post('/verifyInvite/:_id/:inviteToken', verifyInvite);
 
 module.exports = router;
