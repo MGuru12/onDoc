@@ -11,6 +11,7 @@ import KnowledgeBase from './pages/protectedRoutes/KnowledgeBase';
 import KbSettings from './pages/protectedRoutes/KbSettings';
 import AppBar from './pages/AppBar';
 import VerifyInvite from './pages/auth/VerifyInvite';
+import CustomCursor from './utils/CustomCursor';
 
 function AuthLayout() {
   return <Outlet />;
@@ -24,7 +25,8 @@ function App() {
   return (
     <>
       <BrowserRouter>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col relative cursor-none">
+          <CustomCursor/>
           {/* Global Custom Scrollbar Styles */}
           <style jsx>{`
             /* Width */
