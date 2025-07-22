@@ -5,3 +5,7 @@ h1 {
 h2 {
   @apply text-2xl font-semibold;
 }
+
+body, * {
+  cursor: none !important;
+}
