@@ -2,6 +2,7 @@ import { useState } from "react";
 import api from "../../utils/Axios";
 import { useNavigate, Link } from "react-router-dom";
 import { sendOtp } from "../../utils/Services";
+import { toast } from "react-toastify";
 
 const Registration = () => {
   const [uName, setUName] = useState('');
@@ -19,34 +20,34 @@ const Registration = () => {
 
   const verifyMail = async () => {
     if (!email || !uName) {
-      alert("Please enter your username and email before verifying.");
+      toast.warn("Please enter your username and email before verifying.");
       return;
     }
 
     try {
       const response = await api.post('/auth/verifyMail', { email, name: uName });
       const otpCode = response.data.otp;
-      alert("OTP sent to your email. Valid for 10 minutes.");
+      toast.warn("OTP sent to your email. Valid for 10 minutes.");
       setGeneratedOtp(otpCode);
       setOtpSentTime(Date.now());
     } catch (err) {
       console.error(err);
-      alert("Failed to send OTP.");
+      toast.warn("Failed to send OTP.");
     }
   };
 
   const validateOtp = () => {
     const now = Date.now();
     if (!generatedOtp || !otpSentTime || now - otpSentTime > 10 * 60 * 1000) {
-      alert("OTP expired. Please resend.");
+      toast.warn("OTP expired. Please resend.");
       return;
     }
 
     if (otp === generatedOtp) {
       setOtpVerified(true);
-      alert("Email verified successfully!");
+      toast.warn("Email verified successfully!");
     } else {
-      alert("Invalid OTP.");
+      toast.warn("Invalid OTP.");
     }
   };
 
@@ -54,30 +55,30 @@ const Registration = () => {
     e.preventDefault();
 
     if (!otpVerified) {
-      alert("Please verify your email before registering.");
+      toast.warn("Please verify your email before registering.");
       return;
     }
 
     if (pwd !== cPWD) {
-      alert("Passwords do not match.");
+      toast.warn("Passwords do not match.");
       return;
     }
 
     if (pwd.length < 6) {
-      alert("Password must be at least 6 characters.");
+      toast.warn("Password must be at least 6 characters.");
       return;
     }
 
     try {
       await api.post('/auth/Register', { uName, email, pwd, oName });
-      alert("Registered successfully!");
+      toast.success("Registered successfully!");
       navigate('/auth/login');
     } catch (err) {
       if (err.response?.status && err.response.status !== 500) {
-        alert(err.response.data.message);
+        toast.error(err.response.data.message);
       } else {
         console.error(err);
-        alert("Something went wrong");
+        toast.error("Something went wrong");
       }
     }
   };

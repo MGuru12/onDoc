@@ -37,6 +37,7 @@ const Login = async(req, res) => {
         if(!email || !pwd || !oName) return res.status(400).json({message: status400})
 
         let clientData = await clientModel.findOne({organizationName: oName});
+        if(!clientData) return res.status(404).json({message: `Client organization ${oName} not found`});
         let usrType = "Client";
         const _id = clientData._id;
 
