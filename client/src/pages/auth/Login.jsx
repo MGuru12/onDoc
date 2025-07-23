@@ -3,6 +3,7 @@ import api from '../../utils/Axios';
 import { useUser } from '../../utils/Providers';
 import db from '../../db/Dexiedb';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -30,9 +31,17 @@ const Login = () => {
       setUsrType(response.data.usrType);
 
       console.log("Login Successful");
+      toast.success("Login Successful");
       navigate('/project/list');
     } catch (err) {
       console.error("Login Failed:", err);
+      if (err.response && err.response.status === 404) {
+        toast.error(err.response.data.message || "Organization or email not found");
+      } else if (err.response && err.response.status === 401) {
+        toast.error("Incorrect password");
+      } else {
+        toast.error("Something went wrong, please try again later");
+      }
     }
   };
 
