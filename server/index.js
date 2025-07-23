@@ -22,6 +22,7 @@ const projectRoute = require("./Routes/project");
 const docsRoute = require("./Routes/docs");
 const fileRoutes = require("./Routes/storage");
 const member = require("./Routes/member");
+const profile = require("./Routes/profile");
 
 app.get('/', (req,res)=>{res.json({message: `Welcome to onDoc server and running mode: ${process.env.MODE}`})});
 
@@ -31,6 +32,7 @@ app.use('/auth', authRoute);
 app.use('/project', projectRoute);
 app.use('/docs', docsRoute);
 app.use('/member', member);
+app.use('/profile', profile);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

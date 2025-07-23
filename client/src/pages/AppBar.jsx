@@ -66,15 +66,18 @@ const AppBar = () => {
     >
       {/* Logo */}
       <div
-        className="cursor-pointer flex items-center select-none"
-        onClick={() => navigate('/')}
-      >
-        <img
-          src={logo}
-          alt="OnDoc Logo"
-          className="h-40 w-auto object-contain drop-shadow-sm"
-        />
-      </div>
+  className="cursor-pointer select-none overflow-hidden w-24 h-16 flex items-center justify-center"
+  onClick={() => navigate('/')}
+>
+  <img
+    src={logo}
+    alt="OnDoc Logo"
+    className="w-24 h-16 object-contain scale-250"
+  />
+</div>
+
+
+
 
       {/* Right Side: Login or User Avatar */}
       {!accessToken ? (
@@ -113,7 +116,7 @@ const AppBar = () => {
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  navigate('/profile');
+                  navigate('/project/me');
                 }}
                 className="w-full text-left px-5 py-3 text-gray-700 hover:bg-violet-100 transition-colors duration-200 text-sm font-medium"
                 style={{
@@ -121,6 +124,18 @@ const AppBar = () => {
                 }}
               >
                 Profile
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate('/project/list');
+                }}
+                className="w-full text-left px-5 py-3 text-gray-700 hover:bg-violet-100 transition-colors duration-200 text-sm font-medium"
+                style={{
+                  boxShadow: 'inset 2px 2px 6px #f3f4f6, inset -2px -2px 6px #ffffff',
+                }}
+              >
+                Projects
               </button>
               <button
                 onClick={() => {
