@@ -5,7 +5,7 @@ import api from '../../utils/Axios';
 
 const KbSettings = () => {
   const { projId } = useParams();
-  const { accessToken, usrType } = useUser();
+  const { accessToken, usrType, usrId } = useUser();
   const navigate = useNavigate();
 
   const [selected, setSelected] = useState('users');
@@ -14,6 +14,8 @@ const KbSettings = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserName, setNewUserName] = useState('');
   const [projData, setProjData] = useState({ title: '', description: '' });
+  const [ownerDetails, setOwnerDetails] = useState({});
+  const [mydetails, setMyDetails] = useState({});
 
   const headers = { headers: { 'x-access-token': accessToken } };
 
@@ -77,10 +79,43 @@ const KbSettings = () => {
     }
   };
 
+  const handleAddAdmin = async (userId) => {
+  try {
+    await api.post(`/admin/addProjAdmin/${projId}`, { userId }, headers);
+    alert('User made admin successfully!');
+
+    // Update local state: set isAdminProj = true for the user
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user._id === userId ? { ...user, isAdminProj: true } : user
+      )
+    );
+  } catch (err) {
+    alert(err?.response?.data?.message || 'Failed to make user admin.');
+  }
+};
+
+const handleRemoveAdmin = async (userId) => {
+  try {
+    await api.delete(`/admin/removeProjAdmin/${projId}/${userId}`, headers);
+    alert('User removed from admin successfully!');
+
+    // Update local state: set isAdminProj = false for the user
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user._id === userId ? { ...user, isAdminProj: false } : user
+      )
+    );
+  } catch (err) {
+    alert(err?.response?.data?.message || 'Failed to remove user from admin.');
+  }
+};
+
+
   const getUsers = async () => {
     try {
       const response = await api.get(`/member/${projId}`, headers);
-      setUsers(response.data);
+      setUsers(response.data.members);
     } catch (err) {
       alert('Failed to fetch users.');
     }
@@ -95,7 +130,29 @@ const KbSettings = () => {
     }
   };
 
+  const getOwnerDetails = async () => {
+    try {
+      const res = await api.get(`/member/owner`, headers);
+      setOwnerDetails(res.data.owner);
+    } catch (err) {
+      console.error('Failed to fetch project owner details:', err);
+      alert('Failed to fetch project owner details.');
+    }
+  };
+
+  const getMyDetails = async () => {
+    try {
+      const res = await api.get(`/member/mydetails/${projId}`, headers);
+      setMyDetails(res.data.myDetails);
+    } catch (err) {
+      console.error('Failed to fetch my details:', err);
+      alert('Failed to fetch your details.');
+    }
+  };
+
   useEffect(() => {
+    getMyDetails();
+    getOwnerDetails();
     getUsers();
     getProjectData();
   }, [projId]);
@@ -108,7 +165,7 @@ const KbSettings = () => {
             <h2 className="text-2xl font-bold text-violet-900">
               {usrType !== 'Member' ? '👥 Manage Users' : '👥 Users'}
             </h2>
-            {usrType !== 'Member' && (
+            {(usrType === 'Client' || mydetails.isAdmin || mydetails.isAdminProj) && (
               <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-3">
                 <input
                   value={newUserName}
@@ -139,32 +196,71 @@ const KbSettings = () => {
                 </button>
               </div>
             )}
-            <ul className="space-y-3">
+            <ul className="space-y-4">
+              <li
+                key={ownerDetails._id}
+                className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 bg-violet-50 rounded-2xl shadow-md"
+                style={{
+                  boxShadow: '3px 3px 6px #e0e7ff, -3px -3px 6px #ffffff',
+                }}
+              >
+                {/* Username + Tooltip */}
+                <div className="relative group cursor-pointer text-violet-700 font-semibold text-lg">
+                  {ownerDetails.username}
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-max bg-violet-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 whitespace-nowrap">
+                    {ownerDetails.email}
+                  </div>
+                </div>
+              </li>
               {users.map((user) => (
                 <li
                   key={user._id}
-                  className="flex justify-between items-center p-4 bg-violet-50 rounded-2xl"
+                  className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 bg-violet-50 rounded-2xl shadow-md"
                   style={{
                     boxShadow: '3px 3px 6px #e0e7ff, -3px -3px 6px #ffffff',
                   }}
                 >
-                  <div className="relative group cursor-pointer text-violet-700 font-medium">
+                  {/* Username + Tooltip */}
+                  <div className="relative group cursor-pointer text-violet-700 font-semibold text-lg">
                     {user.username}
-                    <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-max bg-violet-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                    <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-max bg-violet-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 whitespace-nowrap">
                       {user.email}
                     </div>
                   </div>
-                  {usrType !== 'Member' && (
-                    <button
-                      onClick={() => handleDeleteUser(user._id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
-                    >
-                      ❌ Remove
-                    </button>
-                  )}
+
+                  {/* Admin & Delete Actions */}
+                  <div className="flex items-center gap-4">
+                    {usrType === 'Client' && (
+                      user.isAdminProj ? (
+                        <button
+                          onClick={() => handleRemoveAdmin(user._id)}
+                          className="text-sm text-red-600 hover:text-red-800 font-medium transition"
+                        >
+                          Remove Admin
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleAddAdmin(user._id)}
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium transition"
+                        >
+                          Make Admin
+                        </button>
+                      )
+                    )}
+
+                    {(usrType === 'Client' || mydetails.isAdmin || mydetails.isAdminProj) && (
+                      <button
+                        onClick={() => handleDeleteUser(user._id)}
+                        className="text-sm text-red-500 hover:text-red-700 transition-colors font-medium"
+                      >
+                        ❌ Remove
+                      </button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
+
           </div>
         );
 

@@ -10,6 +10,10 @@ const memberSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const memberModel = (dbName) => {

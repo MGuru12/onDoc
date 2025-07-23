@@ -99,18 +99,52 @@ const deleteMember = async(req, res) => {
     }
 };
 
-const getMembers = async(req, res) => {
-    try
-    {
-        const {projId} = req.params;
-        const {_id} = req.JWT;
-        if(!projId) return res.status(400).json({message: status400});
+const getMembers = async (req, res) => {
+    try {
+        const { projId } = req.params;
+        const { _id } = req.JWT;
+        if (!projId) return res.status(400).json({ message: status400 });
 
         const User = userModel(_id);
         const Member = memberModel(_id);
-        const usersId = await Member.find({projId}).distinct('userId');
 
-        res.json(await User.find({_id: {$in: usersId}}, {password: 0, inviteToken: 0, __v: 0}));
+        // Fetch members of the project
+        const members = await Member.find({ projId }, { userId: 1, isAdmin: 1, _id: 0 });
+
+        const usersId = members.map(m => m.userId);
+
+        // Fetch user info
+        const users = await User.find({ _id: { $in: usersId } })
+                                .select('username email _id isAdmin')
+                                .lean();
+
+        // Create a lookup for isAdmin by userId
+        const adminMap = new Map(members.map(m => [m.userId.toString(), m.isAdmin]));
+
+        // Add isAdminProj to each user
+        const usersWithAdminFlag = users.map(user => ({
+            ...user,
+            isAdminProj: adminMap.get(user._id.toString()) || false
+        }));
+
+        res.json({
+            message: "Members fetched successfully",
+            members: usersWithAdminFlag,
+            isAdmin: members.find(m => m.userId.toString() === _id.toString())?.isAdmin || false
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: status500 });
+    }
+};
+
+const getProjOwnerDetails = async(req, res) => {
+    try
+    {
+        const { _id } = req.JWT;
+        const owner = await clientModel.findById(_id).select('username email _id').lean();
+        if (!owner) return res.status(404).json({ message: "User not found" });
+        res.status(200).json({ message: "Owner details fetched successfully", owner });
     }
     catch(err)
     {
@@ -119,4 +153,30 @@ const getMembers = async(req, res) => {
     }
 };
 
-module.exports ={inviteMember, ResendInviteMail, deleteMember, getMembers};
+const getMyDetailsProj = async(req, res) => {
+    try
+    {
+        const { _id, usrId, usrType } = req.JWT;
+        console.log(req.JWT);
+        
+        const {projId} = req.params;
+
+        if (!projId) return res.status(400).json({ message: status400 });
+        if(usrType==='Client') res.status(200).json({ message: "My details fetched successfully", myDetails: {isAdmin: true, isAdminProj: true} });
+
+        const User = userModel(_id);
+        const Member = memberModel(_id);
+        const user = await User.findById(usrId).select('isAdmin').lean();
+        const member = await Member.findOne({ projId, userId: usrId }).select('isAdmin').lean();
+        if (!member) return res.status(404).json({ message: "Member not found in the project" });
+        const myDetails = { isAdmin: user.isAdmin, isAdminProj: member.isAdmin};
+        res.status(200).json({ message: "My details fetched successfully", myDetails });
+    }
+    catch(err)
+    {
+        console.error(err);
+        res.status(500).json({message: status500});
+    }
+};
+
+module.exports ={inviteMember, ResendInviteMail, deleteMember, getMembers, getProjOwnerDetails, getMyDetailsProj};
