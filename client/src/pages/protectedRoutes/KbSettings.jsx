@@ -266,17 +266,6 @@ const KbSettings = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 font-[Quicksand] overflow-hidden">
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-violet-50 border-b border-violet-200">
-        <button
-          onClick={() => navigate(`/knowledgebase/${projId}`)}
-          className="text-violet-800 text-2xl"
-        >
-          ←
-        </button>
-        <h2 className="text-xl font-bold text-violet-900">⚙️ Settings</h2>
-      </div>
-
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}

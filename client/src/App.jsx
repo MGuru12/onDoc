@@ -12,6 +12,7 @@ import KbSettings from './pages/protectedRoutes/KbSettings';
 import AppBar from './pages/AppBar';
 import VerifyInvite from './pages/auth/VerifyInvite';
 import CustomCursor from './utils/CustomCursor';
+import UsrProfile from './pages/protectedRoutes/UsrProfile';
 
 function AuthLayout() {
   return <Outlet />;
@@ -96,6 +97,7 @@ function App() {
 
               <Route path="/project" element={<ProtectedRoute><ProjectLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="list" replace />} />
+                <Route path="me" element={<UsrProfile />} />
                 <Route path="list" element={<Projects />} />
                 <Route path="doc/:projId" element={<DocEditor />} />
                 <Route path="KnowledgeBase/:projId" element={<KnowledgeBase />} />
