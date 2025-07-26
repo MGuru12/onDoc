@@ -18,7 +18,8 @@ const getProfile = async (req, res) => {
         } else {
             const User = userModel(_id);
             const oName = await clientModel.findById(_id).select('organizationName').lean();
-            usrData = await User.findById(usrId).select('username email _id').lean();
+            usrData = await User.findById(usrId).select('username email _id isAdmin').lean();
+            if (!usrData) return res.status(404).json({ message: "User not found" });
             usrData.organizationName = oName ? oName.organizationName : "N/A";
             const Members = memberModel(_id);
             const getProjs = await Members.find({ userId: usrId }).distinct('projId');
