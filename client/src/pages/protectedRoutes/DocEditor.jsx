@@ -36,7 +36,24 @@ const DocEditor = () => {
     }
   };
 
+  const verifyMember = async () => {
+    try {
+      const res = await api.get(`/member/verify/${projId}`, {
+        headers: { 'x-access-token': accessToken },
+      });
+      if (!res.data) {
+        toast.error('You are not a member of this project');
+        navigate('/projects/list');
+      }
+    } catch (err) {
+      console.error('Verification failed', err);
+      toast.error('Failed to verify project membership');
+      navigate('/project/list');
+    } 
+  };
+
   useEffect(() => {
+    verifyMember();
     fetchDocs();
     return () => editorRef.current?.destroy?.();
   }, [projId]);
@@ -279,7 +296,7 @@ const DocEditor = () => {
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-violet-50 rounded-full"
+        className="lg:hidden fixed top-18 left-2 z-50 p-2 bg-violet-50 rounded-full"
         style={{
           boxShadow: '4px 4px 8px #e0e7ff, -4px -4px 8px #ffffff',
         }}
@@ -313,6 +330,7 @@ const DocEditor = () => {
 
         {/* Header */}
         <h2
+          onClick={() => navigate(`/project/knowledgebase/${projId}`)}
           className="text-2xl font-bold mb-6 text-center text-violet-900 lg:block"
           style={{ fontFamily: 'Kaushan Script, cursive' }}
         >
@@ -341,7 +359,7 @@ const DocEditor = () => {
             boxShadow: '4px 4px 8px #e0e7ff, -4px -4px 8px #ffffff',
           }}
         >
-          ⚙️ Settings
+          ⚙️Settings
         </button>
       </aside>
 

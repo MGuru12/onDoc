@@ -179,4 +179,78 @@ const getMyDetailsProj = async(req, res) => {
     }
 };
 
-module.exports ={inviteMember, ResendInviteMail, deleteMember, getMembers, getProjOwnerDetails, getMyDetailsProj};
+const getAllUsers = async (req, res) => {
+    try {
+        const { _id } = req.JWT;
+        const User = userModel(_id);
+        const users = await User.find({}).select('username email _id isAdmin').lean();
+        res.status(200).json({ message: "Users fetched successfully", users });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: status500 });
+    }
+};
+
+const verifyMember = async (req, res) => {
+    try
+    {
+        const { projId } = req.params;
+        const { _id, usrId, usrType } = req.JWT;
+        if (!projId) return res.status(400).json({ message: status400 });
+        console.log(usrType);
+        
+        if (usrType === 'Client') res.json({ message: "Client Verified successfully" });
+
+        const Member = memberModel(_id);
+        const member = await Member.findOne({ projId, userId: usrId });
+        if (!member) return res.status(404).json({ message: "Member not found in the project" });
+
+        res.json({ message: "Member verified successfully"});
+    }
+    catch(err)
+    {
+        console.error(err);
+        res.status(500).json({message: status500});
+    }
+};
+
+const verifyUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { _id } = req.JWT;
+        if (!userId) return res.status(400).json({ message: status400 });
+
+        const User = userModel(_id);
+        const user = await User.findById(userId).select('username email _id isAdmin').lean();
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        res.json({ message: "User verified successfully", user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: status500 });
+    }
+};
+
+const removeUserFromOrg = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { _id } = req.JWT;
+
+        if (!userId) return res.status(400).json({ message: status400 });
+
+        const Member = memberModel(_id);
+        await Member.deleteMany({ userId });
+        
+        const User = userModel(_id);
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        await User.deleteOne({ _id: userId });
+        res.json({ message: "User removed from organization successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: status500 });
+    }
+} 
+
+module.exports ={inviteMember, ResendInviteMail, deleteMember, getMembers, getProjOwnerDetails, getMyDetailsProj, getAllUsers, verifyMember, verifyUser, removeUserFromOrg};

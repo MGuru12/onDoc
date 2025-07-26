@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../../utils/Providers';
 import api from '../../utils/Axios';
+import { toast } from 'react-toastify';
 
 const KbSettings = () => {
   const { projId } = useParams();
@@ -42,17 +43,17 @@ const KbSettings = () => {
       alert('User invited!');
       getUsers();
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to invite user.');
+      toast.error(err?.response?.data?.message || 'Failed to invite user.');
     }
   };
 
   const handleDeleteUser = async (userId) => {
     try {
       await api.delete(`/member/${userId}?projId=${projId}`, headers);
-      alert('User deleted!');
+      toast.success('User deleted!');
       getUsers();
     } catch (err) {
-      alert('Failed to delete user.');
+      toast.error('Failed to delete user.');
     }
   };
 
@@ -62,9 +63,9 @@ const KbSettings = () => {
       if (projData.title) payload.title = projData.title;
       if (projData.description) payload.description = projData.description;
       await api.put(`project/${projId}/update`, payload, headers);
-      alert('Project updated!');
+      toast.success('Project updated!');
     } catch (err) {
-      alert('Failed to update project.');
+      toast.error('Failed to update project.');
     }
   };
 
@@ -72,17 +73,17 @@ const KbSettings = () => {
     if (!window.confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
     try {
       await api.delete(`proj/delete?_id=${projId}`, headers);
-      alert('Project deleted!');
+      toast.success('Project deleted!');
       navigate('/');
     } catch (err) {
-      alert('Failed to delete project.');
+      toast.error('Failed to delete project.');
     }
   };
 
   const handleAddAdmin = async (userId) => {
   try {
     await api.post(`/admin/addProjAdmin/${projId}`, { userId }, headers);
-    alert('User made admin successfully!');
+    toast.success('User made admin successfully!');
 
     // Update local state: set isAdminProj = true for the user
     setUsers(prevUsers =>
@@ -91,14 +92,14 @@ const KbSettings = () => {
       )
     );
   } catch (err) {
-    alert(err?.response?.data?.message || 'Failed to make user admin.');
+    toast.error(err?.response?.data?.message || 'Failed to make user admin.');
   }
 };
 
 const handleRemoveAdmin = async (userId) => {
   try {
     await api.delete(`/admin/removeProjAdmin/${projId}/${userId}`, headers);
-    alert('User removed from admin successfully!');
+    toast.success('User removed from admin successfully!');
 
     // Update local state: set isAdminProj = false for the user
     setUsers(prevUsers =>
@@ -107,7 +108,7 @@ const handleRemoveAdmin = async (userId) => {
       )
     );
   } catch (err) {
-    alert(err?.response?.data?.message || 'Failed to remove user from admin.');
+    toast.error(err?.response?.data?.message || 'Failed to remove user from admin.');
   }
 };
 
@@ -117,7 +118,7 @@ const handleRemoveAdmin = async (userId) => {
       const response = await api.get(`/member/${projId}`, headers);
       setUsers(response.data.members);
     } catch (err) {
-      alert('Failed to fetch users.');
+      toast.error('Failed to fetch users.');
     }
   };
 
@@ -126,7 +127,7 @@ const handleRemoveAdmin = async (userId) => {
       const res = await api.get(`/project/${projId}`, headers);
       setProjData(res.data);
     } catch (err) {
-      alert('Failed to fetch project data.');
+      toast.error('Failed to fetch project data.');
     }
   };
 
@@ -136,7 +137,7 @@ const handleRemoveAdmin = async (userId) => {
       setOwnerDetails(res.data.owner);
     } catch (err) {
       console.error('Failed to fetch project owner details:', err);
-      alert('Failed to fetch project owner details.');
+      toast.error('Failed to fetch project owner details.');
     }
   };
 
@@ -146,11 +147,28 @@ const handleRemoveAdmin = async (userId) => {
       setMyDetails(res.data.myDetails);
     } catch (err) {
       console.error('Failed to fetch my details:', err);
-      alert('Failed to fetch your details.');
+      toast.error('Failed to fetch your details.');
     }
   };
 
+  const verifyMember = async () => {
+      try {
+        const res = await api.get(`/member/verify/${projId}`, {
+          headers: { 'x-access-token': accessToken },
+        });
+        if (!res.data) {
+          toast.error('You are not a member of this project');
+          navigate('/projects/list');
+        }
+      } catch (err) {
+        console.error('Verification failed', err);
+        toast.error('Failed to verify project membership');
+        navigate('/project/list');
+      } 
+    };
+
   useEffect(() => {
+    verifyMember();
     getMyDetails();
     getOwnerDetails();
     getUsers();
@@ -222,12 +240,12 @@ const handleRemoveAdmin = async (userId) => {
                 >
                   {/* Username + Tooltip */}
                   <div className="relative group cursor-pointer text-violet-700 font-semibold text-lg">
-                    {user.username}
+                    {user.username}{user.isAdminProj && (<span className="text-blue-600 font-medium"> - Admin</span>)}
                     <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-max bg-violet-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 whitespace-nowrap">
                       {user.email}
                     </div>
                   </div>
-
+                  
                   {/* Admin & Delete Actions */}
                   <div className="flex items-center gap-4">
                     {usrType === 'Client' && (
@@ -248,7 +266,7 @@ const handleRemoveAdmin = async (userId) => {
                       )
                     )}
 
-                    {(usrType === 'Client' || mydetails.isAdmin || mydetails.isAdminProj) && (
+                    {(usrType === 'Client' || mydetails.isAdmin || mydetails.isAdminProj || usrId == user._id) && (
                       <button
                         onClick={() => handleDeleteUser(user._id)}
                         className="text-sm text-red-500 hover:text-red-700 transition-colors font-medium"
@@ -365,7 +383,7 @@ const handleRemoveAdmin = async (userId) => {
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-violet-50 rounded-full"
+        className="md:hidden fixed top-18 left-2 z-50 p-2 bg-violet-50 rounded-full"
         style={{
           boxShadow: '4px 4px 8px #e0e7ff, -4px -4px 8px #ffffff',
         }}
@@ -404,29 +422,44 @@ const handleRemoveAdmin = async (userId) => {
         </h2>
 
         <nav className="space-y-2">
-          {sidebarItems.map((item) => (
-            <div
-              key={item.key}
-              onClick={() => {
-                setSelected(item.key);
-                setMobileMenuOpen(false);
-              }}
-              className={`p-3 cursor-pointer rounded-xl transition-all duration-200 ${
-                selected === item.key
-                  ? 'bg-violet-100 shadow-inner-neu'
-                  : 'hover:bg-violet-100'
-              }`}
-              style={{
-                boxShadow:
+          {sidebarItems.map((item) => {
+            // If the item is "delete" and the user is not a "Client", skip rendering
+            if (item.key === 'delete' && usrType !== 'Client') return null;
+
+            return (
+              <div
+                key={item.key}
+                onClick={() => {
+                  setSelected(item.key);
+                  setMobileMenuOpen(false);
+                }}
+                className={`p-3 cursor-pointer rounded-xl transition-all duration-200 ${
                   selected === item.key
-                    ? 'inset 2px 2px 4px #f0f4ff, inset -2px -2px 4px #ffffff'
-                    : '3px 3px 6px #e0e7ff, -3px -3px 6px #ffffff',
-              }}
-            >
-              {item.title}
-            </div>
-          ))}
+                    ? 'bg-violet-100 shadow-inner-neu'
+                    : 'hover:bg-violet-100'
+                }`}
+                style={{
+                  boxShadow:
+                    selected === item.key
+                      ? 'inset 2px 2px 4px #f0f4ff, inset -2px -2px 4px #ffffff'
+                      : '3px 3px 6px #e0e7ff, -3px -3px 6px #ffffff',
+                }}
+              >
+                {item.title}
+              </div>
+            );
+          })}
         </nav>
+
+        <button
+          onClick={() => navigate(`/project/doc/${projId}`)}
+          className="mt-6 w-full py-3 bg-violet-100 text-violet-800 font-medium rounded-2xl transition-all duration-300 active:scale-[0.98]"
+          style={{
+            boxShadow: '4px 4px 8px #e0e7ff, -4px -4px 8px #ffffff',
+          }}
+        >
+          ◀ Back to OnDoc Editor
+        </button>
       </aside>
 
       {/* Mobile Overlay */}

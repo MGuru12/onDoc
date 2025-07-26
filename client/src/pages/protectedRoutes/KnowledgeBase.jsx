@@ -142,7 +142,7 @@ const KnowledgeBase = () => {
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-violet-50 rounded-full"
+        className="lg:hidden fixed top-18 left-2 z-50 p-2 bg-violet-50 rounded-full"
         style={{
           boxShadow: '4px 4px 8px #e0e7ff, -4px -4px 8px #ffffff',
         }}
