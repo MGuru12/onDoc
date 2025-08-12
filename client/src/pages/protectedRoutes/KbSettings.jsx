@@ -62,6 +62,11 @@ const KbSettings = () => {
       const payload = {};
       if (projData.title) payload.title = projData.title;
       if (projData.description) payload.description = projData.description;
+      console.log(projData);
+      
+      if (projData.kbType) payload.kbType = projData.kbType;
+      console.log(payload);
+      
       await api.put(`project/${projId}/update`, payload, headers);
       toast.success('Project updated!');
     } catch (err) {
@@ -288,8 +293,10 @@ const handleRemoveAdmin = async (userId) => {
             <h2 className="text-2xl font-bold text-violet-900">
               {usrType === 'Client' ? '🛠️ Edit Project' : '📄 Project Details'}
             </h2>
+
             {usrType === 'Client' ? (
               <>
+                {/* Project Title */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">Project Title</label>
                   <input
@@ -303,6 +310,8 @@ const handleRemoveAdmin = async (userId) => {
                     }}
                   />
                 </div>
+
+                {/* Description */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">Description</label>
                   <textarea
@@ -315,6 +324,36 @@ const handleRemoveAdmin = async (userId) => {
                     }}
                   />
                 </div>
+
+                {/* kbType Radio Buttons */}
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Knowledge Base Type</label>
+                  <div className="flex items-center space-x-6">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        value="internal"
+                        checked={projData.kbType === 'internal'}
+                        onChange={(e) => setProjData({ ...projData, kbType: e.target.value })}
+                        className="form-radio text-violet-600"
+                        
+                      />
+                      <span className="ml-2 text-violet-900">Internal</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        value="external"
+                        checked={projData.kbType === 'external'}
+                        onChange={(e) => setProjData({ ...projData, kbType: e.target.value })}
+                        className="form-radio text-violet-600"
+                      />
+                      <span className="ml-2 text-violet-900">External</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Save Button */}
                 <button
                   onClick={handleProjectUpdate}
                   className="px-6 py-3 bg-blue-50 text-blue-700 font-medium rounded-2xl transition-all active:scale-[0.98]"
@@ -326,6 +365,7 @@ const handleRemoveAdmin = async (userId) => {
                 </button>
               </>
             ) : (
+              // Viewer Mode
               <div className="space-y-4">
                 <div>
                   <label className="block text-gray-700 font-medium">Project Title</label>
@@ -349,9 +389,21 @@ const handleRemoveAdmin = async (userId) => {
                     {projData.description}
                   </div>
                 </div>
+                <div>
+                  <label className="block text-gray-700 font-medium">Knowledge Base Type</label>
+                  <div
+                    className="px-5 py-3 bg-violet-100 rounded-2xl text-violet-900 mt-1 capitalize"
+                    style={{
+                      boxShadow: 'inset 3px 3px 6px #f0f4ff, inset -3px -3px 6px #ffffff',
+                    }}
+                  >
+                    {projData.kbType}
+                  </div>
+                </div>
               </div>
             )}
           </div>
+
         );
 
       case 'delete':

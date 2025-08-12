@@ -16,6 +16,15 @@ const KnowledgeBase = () => {
   const currentPath = decodeURIComponent(location.pathname.split(`/kb/${orgId}/${projId}/`)[1] || '/');
 
   useEffect(() => {
+    console.log(proj.kbType);
+    
+  if (!loading && proj.kbType === 'internal') {
+    navigate(`/project/knowledgebase/${projId}/`, { replace: true });
+  }
+}, [loading, proj.kbType, projId, navigate]);
+
+
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
