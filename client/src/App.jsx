@@ -102,7 +102,7 @@ function App() {
                 <Route path="me" element={<UsrProfile />} />
                 <Route path="list" element={<Projects />} />
                 <Route path="doc/:projId" element={<DocEditor />} />
-                <Route path="KnowledgeBase/:projId" element={<KnowledgeBase />} />
+                <Route path="KnowledgeBase/:projId/*" element={<KnowledgeBase />} />
                 <Route path="KnowledgeBase/:projId/settings" element={<KbSettings />} />
               </Route>
 

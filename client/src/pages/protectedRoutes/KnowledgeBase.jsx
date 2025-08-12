@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../utils/Axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../../utils/Providers';
 
 const KnowledgeBase = () => {
   const { projId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { accessToken } = useUser();
+
   const [proj, setProj] = useState({});
   const [docs, setDocs] = useState([]);
   const [selected, setSelected] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState({});
-  const { accessToken } = useUser();
 
+  const basePath = `/project/knowledgebase/${projId}/`;
+  const currentPath = decodeURIComponent(location.pathname.replace(basePath, '')) || '/';
+  
   // Fetch deployed documents
   useEffect(() => {
     const fetchDeployedDocs = async () => {
@@ -23,7 +29,15 @@ const KnowledgeBase = () => {
         setProj(res.data.proj[0]);
         const deployed = res.data.docs.filter((doc) => doc.deploy);
         setDocs(deployed);
-        setSelected(deployed[0] || null);
+
+        // Match by path
+        const matchedDoc = deployed.find((doc) => doc.path === currentPath);
+        setSelected(matchedDoc || deployed[0] || null);
+
+        // Optional: redirect if no matching path
+        if (!matchedDoc && deployed.length > 0) {
+          navigate(`/project/knowledgebase/${projId}/${deployed[0].path}`, { replace: true });
+        }
       } catch (err) {
         console.error('Failed to fetch deployed docs:', err);
       }
@@ -34,21 +48,20 @@ const KnowledgeBase = () => {
 
   // Expand parent nodes when a document is selected
   useEffect(() => {
-    if (selected) {
-      const map = {};
-      docs.forEach((doc) => {
-        map[doc._id] = doc;
-      });
+    if (selected && docs.length > 0) {
+      const map = Object.fromEntries(docs.map((doc) => [doc._id, doc]));
+      const expanded = {};
 
-      const expandParents = (nodeId) => {
-        const item = map[nodeId];
-        if (item?.ref) {
-          setExpandedNodes((prev) => ({ ...prev, [item.ref]: true }));
-          expandParents(item.ref);
+      const expandParents = (id) => {
+        const node = map[id];
+        if (node?.ref) {
+          expanded[node.ref] = true;
+          expandParents(node.ref);
         }
       };
 
       expandParents(selected._id);
+      setExpandedNodes((prev) => ({ ...prev, ...expanded }));
     }
   }, [selected, docs]);
 
@@ -89,17 +102,18 @@ const KnowledgeBase = () => {
 
       return (
         <div key={node._id} className="relative group">
-          {/* Tree Node */}
           <div
             onClick={() => {
-              if (hasChildren) toggleNode(node._id);
-              setSelected(node);
-              if (window.innerWidth < 768) setSidebarOpen(false);
+              if (hasChildren && isSelected) {
+                toggleNode(node._id);
+              } else {
+                setSelected(node);
+                navigate(`/project/knowledgebase/${projId}/${node.path === '/' ? '' : node.path}`, { replace: true });
+                if (window.innerWidth < 768) setSidebarOpen(false);
+              }
             }}
             className={`flex items-center gap-2 px-3 py-1.5 my-1 rounded-xl cursor-pointer transition-all duration-200 text-sm font-medium truncate ${
-              isSelected
-                ? 'bg-violet-100 shadow-inner-neu'
-                : 'hover:bg-violet-50'
+              isSelected ? 'bg-violet-100 shadow-inner-neu' : 'hover:bg-violet-50'
             }`}
             style={{
               paddingLeft: `${level * 20 + 12}px`,
@@ -119,7 +133,6 @@ const KnowledgeBase = () => {
             <span className="truncate">{node.title}</span>
           </div>
 
-          {/* Vertical connector line */}
           {level > 0 && (
             <div
               className="absolute top-0 left-3 bottom-0 w-px bg-gradient-to-b from-transparent via-violet-200 to-transparent"
@@ -127,7 +140,6 @@ const KnowledgeBase = () => {
             />
           )}
 
-          {/* Children */}
           {hasChildren && isExpanded && (
             <div className="ml-2 border-l-2 border-violet-200 pl-2 mt-1">
               {renderSidebarTree(node.children, level + 1)}
@@ -166,7 +178,7 @@ const KnowledgeBase = () => {
           borderRadius: '0 1.5rem 1.5rem 0',
         }}
       >
-        {/* Close Button (Mobile Only) */}
+        {/* Close Button (Mobile) */}
         <button
           onClick={() => setSidebarOpen(false)}
           className="lg:hidden absolute top-4 right-4 text-violet-600 hover:text-violet-800"
@@ -176,17 +188,21 @@ const KnowledgeBase = () => {
 
         {/* Header */}
         <h2
-          className="text-2xl font-bold mb-6 text-center text-violet-900 lg:block"
+          className="text-2xl font-bold mb-6 text-center text-violet-900"
           style={{ fontFamily: 'Kaushan Script, cursive' }}
         >
-          {proj.title}
+          {proj.title || 'Knowledge Base'}
         </h2>
 
-        {/* Navigation Tree */}
-        <nav className="space-y-1">{renderSidebarTree(buildTree(docs))}</nav>
+        {/* Sidebar Tree */}
+        <nav className="space-y-1">
+          {docs.length > 0 ? renderSidebarTree(buildTree(docs)) : (
+            <p className="text-sm text-gray-500 px-3">No documents available.</p>
+          )}
+        </nav>
       </aside>
 
-      {/* Mobile Overlay */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden"
@@ -194,7 +210,7 @@ const KnowledgeBase = () => {
         />
       )}
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto bg-violet-100 rounded-t-3xl md:rounded-none">
         {selected ? (
           <div

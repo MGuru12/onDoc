@@ -9,6 +9,11 @@ const projectSchema = new mongoose.Schema({
     description: {
         type: String,
         default: "",
+    },
+    kbType: {
+        type: String,
+        enum: ["internal", "external"],
+        default: "external",
     }
 });
 
