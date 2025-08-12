@@ -74,7 +74,7 @@ const getProjById = async(req, res) => {
         if(!projId) return res.status(400).json({message: status400});
 
         const Proj = projectModel(_id);
-        const proj = await Proj.findOne({_id: projId}).select('title description').lean();
+        const proj = await Proj.findOne({_id: projId}).select('title description kbType').lean();
 
         res.json(proj);
     }
@@ -90,11 +90,13 @@ const updateProj = async(req, res) => {
     {
         const {projId} = req.params;
         const {_id} = req.JWT;
-        const {title, description} = req.body;
-        if(!projId || !title) return res.status(400).json({message: status400});
+        const {title, description, kbType} = req.body;
+        if(!projId || !title || !kbType) return res.status(400).json({message: status400});
 
         const Proj = projectModel(_id);
-        await Proj.updateOne({_id: projId}, {title, description});
+        const data = {title, description, kbType};
+        if(description) data.description = description;
+        await Proj.updateOne({_id: projId}, data);
         res.json({message: "Project updated successfully"});
     }
     catch(err)
