@@ -145,6 +145,31 @@ const DocEditor = () => {
     }
   };
 
+  const handleVisiblity = async() => {
+    try
+    {
+      await api.put(
+        `/docs/${selected._id}`,
+        {
+          visibility: selected.visibility,
+        },
+        { headers: { 'x-access-token': accessToken } }
+      );
+      setUnsaved((prev) => {
+        const s = new Set(prev);
+        s.delete(selected._id);
+        return s;
+      });
+      setDocs(docs.map((d) => (d._id === selected._id ? { ...d, visibility: selected.visibility } : d)));
+      setSelected({ ...selected, visibility: selected.visibility=='public' ? 'private' : 'public' });
+      // toast.success('Visibility updated successfully');
+    }
+    catch(err)
+    {
+      toast.error(err?.response?.data?.message || 'Updating visibility failed');
+    }
+  };
+
   const handleDelete = async (id) => {
     const doc = docs.find((d) => d._id === id);
     if (doc?.builtIn) return alert('Cannot delete built-in page');
@@ -230,7 +255,7 @@ const DocEditor = () => {
           <span className={`font-mono ${unsaved.has(n._id) ? 'text-red-500' : 'text-violet-800'}`}>
             {lvl > 0 ? '|__ ' : ''}{n.title}
           </span>
-          {!n.builtIn && (
+          {/* {!n.builtIn && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -240,7 +265,7 @@ const DocEditor = () => {
             >
               ❌
             </button>
-          )}
+          )} */}
         </div>
         {n.children?.length > 0 && (
           <div className="ml-2 border-l-2 border-violet-200 pl-2 mt-1">
@@ -383,37 +408,70 @@ const DocEditor = () => {
               }}
             >
               <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                <input
-                  type="text"
-                  value={selected.path}
-                  disabled={previewMode}
-                  onChange={(e) => setSelected({ ...selected, path: e.target.value })}
-                  onBlur={() =>
-                    isDuplicate(selected.title, selected.path, selected.ref || null, selected._id) &&
-                    fetchDocs()
-                  }
-                  placeholder="Path"
-                  className="px-5 py-3 bg-violet-100 border-none rounded-2xl text-violet-900 placeholder-violet-500 focus:outline-none font-mono"
-                  style={{
-                    boxShadow: 'inset 3px 3px 6px #f0f4ff, inset -3px -3px 6px #ffffff',
-                  }}
-                />
-                <input
-                  type="text"
-                  value={selected.title}
-                  disabled={previewMode}
-                  onChange={(e) => setSelected({ ...selected, title: e.target.value })}
-                  onBlur={() =>
-                    isDuplicate(selected.title, selected.path, selected.ref || null, selected._id) &&
-                    fetchDocs()
-                  }
-                  placeholder="Title"
-                  className="px-5 py-3 bg-violet-100 border-none rounded-2xl text-violet-900 placeholder-violet-500 focus:outline-none font-mono"
-                  style={{
-                    boxShadow: 'inset 3px 3px 6px #f0f4ff, inset -3px -3px 6px #ffffff',
-                  }}
-                />
-                <div className="flex gap-3">
+                {/* Path Input */}
+                <label>
+                  Path: {selected.path!=='/' && (<b>/</b>)}
+                  <input
+                    type="text"
+                    value={selected.path}
+                    disabled={previewMode || selected.path === '/'}
+                    onChange={(e) =>
+                      setSelected({ ...selected, path: e.target.value })
+                    }
+                    onBlur={() => {
+                      if (
+                        isDuplicate(
+                          selected.title,
+                          selected.path,
+                          selected.ref || null,
+                          selected._id
+                        )
+                      ) {
+                        fetchDocs();
+                      }
+                    }}
+                    placeholder="Path"
+                    className="px-5 py-3 bg-violet-100 border-none rounded-2xl text-violet-900 placeholder-violet-500 focus:outline-none font-mono"
+                    style={{
+                      boxShadow:
+                        'inset 3px 3px 6px #f0f4ff, inset -3px -3px 6px #ffffff',
+                    }}
+                  />
+                </label>
+
+                {/* Title Input */}
+                <label>
+                  Name:
+                  <input
+                    type="text"
+                    value={selected.title}
+                    disabled={previewMode || selected.title === 'root'}
+                    onChange={(e) =>
+                      setSelected({ ...selected, title: e.target.value })
+                    }
+                    onBlur={() => {
+                      if (
+                        isDuplicate(
+                          selected.title,
+                          selected.path,
+                          selected.ref || null,
+                          selected._id
+                        )
+                      ) {
+                        fetchDocs();
+                      }
+                    }}
+                    placeholder="Title"
+                    className="px-5 py-3 bg-violet-100 border-none rounded-2xl text-violet-900 placeholder-violet-500 focus:outline-none font-mono"
+                    style={{
+                      boxShadow:
+                        'inset 3px 3px 6px #f0f4ff, inset -3px -3px 6px #ffffff',
+                    }}
+                  />
+                </label>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 items-end">
                   <button
                     onClick={handleSave}
                     disabled={previewMode}
@@ -424,6 +482,7 @@ const DocEditor = () => {
                   >
                     Save
                   </button>
+
                   <button
                     onClick={handleDeploy}
                     disabled={previewMode}
@@ -434,6 +493,25 @@ const DocEditor = () => {
                   >
                     Deploy
                   </button>
+
+                  {/* Visibility Toggle (Only if not root) */}
+                  {selected.path !== '/' && (
+                    <button
+                      type="button"
+                      onClick={handleVisiblity}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        selected.visibility === 'public'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                      style={{
+                        boxShadow:
+                          'inset 2px 2px 4px #ffffff, inset -1px -1px 3px rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      {selected.visibility === 'public' ? '🟢 Public' : '🔴 Private'}
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end">
