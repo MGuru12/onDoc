@@ -24,6 +24,7 @@ const fileRoutes = require("./Routes/storage");
 const member = require("./Routes/member");
 const profile = require("./Routes/profile");
 const admin = require("./Routes/admin");
+const kb = require("./Routes/kb");
 
 app.get('/', (req,res)=>{res.json({message: `Welcome to onDoc server and running mode: ${process.env.MODE}`})});
 
@@ -35,6 +36,7 @@ app.use('/docs', docsRoute);
 app.use('/member', member);
 app.use('/profile', profile);
 app.use('/admin', admin);
+app.use('/kb', kb);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

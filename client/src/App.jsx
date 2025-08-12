@@ -13,6 +13,7 @@ import AppBar from './pages/AppBar';
 import VerifyInvite from './pages/auth/VerifyInvite';
 import CustomCursor from './utils/CustomCursor';
 import UsrProfile from './pages/protectedRoutes/UsrProfile';
+import Knowledgebase from './pages/Knowledgebase';
 
 function AuthLayout() {
   return <Outlet />;
@@ -86,6 +87,7 @@ function App() {
           <main className="flex-grow pt-16 overflow-x-hidden">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/kb/:orgId/:projId/*" element={<Knowledgebase />} />
 
               <Route path="/auth" element={<AuthLayout />}>
                 <Route index element={<Navigate to="login" replace />} />

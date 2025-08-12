@@ -46,12 +46,19 @@ const updateDoc = async (req, res) => {
   try {
     const {_id} = req.JWT;
     const { id } = req.params;
-    const { title, path, content, deploy } = req.body;
+    const { title, path, content, deploy, visibility } = req.body;
 
     const Docs = docsModel(_id);
     const doc = await Docs.findById(id);
 
     if (!doc) return res.status(404).json({ message: 'Doc not found' });
+
+    if(visibility) 
+      {
+        doc.visibility = doc.visibility == 'public' ? 'private' : 'public';
+        await doc.save();
+        res.json({message: "Visibility updated successfully"});
+      }
 
     const duplicate = await Docs.findOne({ 
       _id: { $ne: id }, 
