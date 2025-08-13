@@ -9,7 +9,7 @@ mcp = FastMCP("My MCP Server")
 
 @mcp.tool
 def greet(name: str) -> str:
-    return f"Hello, {name}!"
+    return f"Hello, {name}! I'm your Genie, here to help you with your knowledgebase"
 
 @mcp.tool
 async def get_doc(doc_id: str, ctx: Context | None = None) -> dict | None:
@@ -58,6 +58,22 @@ async def get_kb(proj_id: str, ctx: Context | None = None) -> list[dict] | None:
     json_docs = json.loads(json_str)
 
     return json_docs
+
+@mcp.tool
+async def get_doc_id_by_title(title: str, ctx: Context | None = None) -> str | None:
+    try:
+        doc = await anyio.to_thread.run_sync(my_collection.find_one, {"title": title})
+    except PyMongoError as e:
+        if ctx:
+            await ctx.error(f"Database error: {e}")
+        return None
+
+    if not doc:
+        if ctx:
+            await ctx.info(f"No document found with title: {title}")
+        return None
+
+    return str(doc["_id"])
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
