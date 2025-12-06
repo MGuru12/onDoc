@@ -5,7 +5,7 @@ const { status500, status400 } = require("../utils/const");
 const getKB = async(req, res) => {
     try
     {
-        const {orgId, projId} = req.params;
+        const {orgId, projId} = req.params;s
         if(!orgId || !projId) res.status(400).json({message: status400});
 
         const Proj = projectModel(orgId);

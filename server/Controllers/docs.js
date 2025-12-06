@@ -12,7 +12,7 @@ const getDocs = async (req, res) => {
     const Docs = docsModel(_id);
     const proj = await Proj.find({_id: projId});
     const docs = await Docs.find({ proj: projId });
-    res.json({proj,docs});
+    res.json({proj,docs, orgId: _id});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: status500 });

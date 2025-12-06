@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import api from '../../utils/Axios';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../../utils/Providers';
+import Chatbot from '../../components/Chatbot';
 
 const KnowledgeBase = () => {
   const { projId } = useParams();
+  const [orgId, setOrgId] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const { accessToken } = useUser();
@@ -25,7 +27,7 @@ const KnowledgeBase = () => {
         const res = await api.get(`/docs?projId=${projId}`, {
           headers: { 'x-access-token': accessToken },
         });
-
+        setOrgId(res.data.orgId);
         setProj(res.data.proj[0]);
         const deployed = res.data.docs.filter((doc) => doc.deploy);
         setDocs(deployed);
@@ -225,6 +227,7 @@ const KnowledgeBase = () => {
             👈 Select a document to read
           </div>
         )}
+        <Chatbot orgId={orgId} projId={projId} />
       </main>
     </div>
   );

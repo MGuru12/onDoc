@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/Axios';
+import Chatbot from '../components/Chatbot';
 
 const KnowledgeBase = () => {
   const { orgId, projId } = useParams();
@@ -226,6 +227,7 @@ const KnowledgeBase = () => {
             {docs.length === 0 ? '📚 No documents available' : '👈 Select a document to view'}
           </div>
         )}
+        <Chatbot orgId={orgId} projId={projId} />
       </main>
     </div>
   );
