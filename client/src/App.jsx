@@ -14,6 +14,7 @@ import VerifyInvite from './pages/auth/VerifyInvite';
 import CustomCursor from './utils/CustomCursor';
 import UsrProfile from './pages/protectedRoutes/UsrProfile';
 import Knowledgebase from './pages/Knowledgebase';
+import Pricing from './pages/protectedRoutes/Pricing';
 
 function AuthLayout() {
   return <Outlet />;
@@ -88,7 +89,6 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/kb/:orgId/:projId/*" element={<Knowledgebase />} />
-
               <Route path="/auth" element={<AuthLayout />}>
                 <Route index element={<Navigate to="login" replace />} />
                 <Route path="registration" element={<Registration />} />
@@ -101,6 +101,7 @@ function App() {
                 <Route index element={<Navigate to="list" replace />} />
                 <Route path="me" element={<UsrProfile />} />
                 <Route path="list" element={<Projects />} />
+                <Route path="pricing" element={<Pricing />} />
                 <Route path="doc/:projId" element={<DocEditor />} />
                 <Route path="KnowledgeBase/:projId/*" element={<KnowledgeBase />} />
                 <Route path="KnowledgeBase/:projId/settings" element={<KbSettings />} />

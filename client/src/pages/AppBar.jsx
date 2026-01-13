@@ -140,14 +140,14 @@ const AppBar = () => {
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  navigate('/billing');
+                  navigate('/project/pricing');
                 }}
                 className="w-full text-left px-5 py-3 text-gray-700 hover:bg-violet-100 transition-colors duration-200 text-sm font-medium"
                 style={{
                   boxShadow: 'inset 2px 2px 6px #f3f4f6, inset -2px -2px 6px #ffffff',
                 }}
               >
-                Billing
+                Pricing
               </button>
               <hr
                 className="border-t border-violet-200 my-1"

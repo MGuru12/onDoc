@@ -25,6 +25,7 @@ const member = require("./Routes/member");
 const profile = require("./Routes/profile");
 const admin = require("./Routes/admin");
 const kb = require("./Routes/kb");
+const razorpay = require("./Routes/razorpay");
 
 app.get('/', (req,res)=>{res.json({message: `Welcome to onDoc server and running mode: ${process.env.MODE}`})});
 
@@ -37,6 +38,7 @@ app.use('/member', member);
 app.use('/profile', profile);
 app.use('/admin', admin);
 app.use('/kb', kb);
+app.use('/razorpay', razorpay);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

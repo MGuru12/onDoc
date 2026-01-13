@@ -18,6 +18,29 @@ const clientSchema = new mongoose.Schema({
     organizationName: {
         type: String,
         required: true,
+    },
+    plan: {
+        currentPlan: {
+            type: String,
+            default: "free",
+            enum: [null, "free", "basic", "standard", "premium"]
+        },
+        activeUntil: {
+            type: Date,
+            default: null,
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now,
+        },
+        updatedAt: {
+            type: Date
+        },
+        nextPlan: {
+            type: String,
+            default: null,
+            enum: [null, "basic", "standard", "premium"]
+        }
     }
 });
 

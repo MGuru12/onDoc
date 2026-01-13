@@ -20,7 +20,7 @@ const Register = async(req, res) => {
         if(await clientModel.exists({email})) return res.status(409).json({message: `Client email ${email} already exists`});
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(pwd, salt);
-        await clientModel.create({username: uName, email, password: hashedPassword, organizationName: oName});
+        await clientModel.create({username: uName, email, password: hashedPassword, organizationName: oName, plan: {currentPlan: "free", createdAt: Date.now(), updatedAt: Date.now(), activeUntil: Date.now() + 30 * 24 * 60 * 60 * 1000, nextPlan: null}});
         res.status(201).json({message: "Client created successfully"});
     }
     catch(err)
@@ -40,7 +40,7 @@ const Login = async(req, res) => {
         if(!clientData) return res.status(404).json({message: `Client organization ${oName} not found`});
         let usrType = "Client";
         const _id = clientData._id;
-
+        const plan = clientData.plan;
         if(clientData && clientData.email !== email)
             {
                 const User = userModel(clientData._id);
@@ -51,14 +51,10 @@ const Login = async(req, res) => {
         if(!clientData) return res.status(404).json({message: `Client email ${email} not found`});
         if(!(await bcrypt.compare(pwd, clientData.password))) return res.status(401).json({message: status401});
 
-        console.log(usrType);
-        
-        const accessToken = jwt.sign({_id, usrId: clientData._id, usrType}, JWT_access_SECRET, {expiresIn: accessExpiresIn});
-        const refreshToken = jwt.sign({_id, usrId: clientData._id, usrType}, JWT_refresh_SECRET, {expiresIn: refreshExpiresIn});
-const decodedData = jwt.verify(accessToken, JWT_access_SECRET);
-console.log(decodedData);
-
-        const data = {_i: clientData._id, n: clientData.username, e: clientData.email};
+        const tokenData = {_id, usrId: clientData._id, usrType, plan};
+        const accessToken = jwt.sign(tokenData, JWT_access_SECRET, {expiresIn: accessExpiresIn});
+        const refreshToken = jwt.sign(tokenData, JWT_refresh_SECRET, {expiresIn: refreshExpiresIn});
+        const data = {_i: clientData._id, n: clientData.username, e: clientData.email, p: plan};
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
