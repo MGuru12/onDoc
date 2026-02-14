@@ -1,6 +1,8 @@
 const { verifyAccessToken } = require("../Controllers/auth");
-const { validatePlan, createOrder, verifyPayment } = require("../Controllers/razorpay");
+const { validatePlan, createOrder, verifyPayment, getPlanDetails } = require("../Controllers/razorpay");
 const router = require("express").Router();
+
+router.get('/plan-details', verifyAccessToken, getPlanDetails);
 
 router.post('/create-order', verifyAccessToken, validatePlan, createOrder);
 

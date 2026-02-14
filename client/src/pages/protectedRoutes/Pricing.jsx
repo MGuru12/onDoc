@@ -225,7 +225,7 @@ const Pricing = () => {
       name: 'Standard',
       price: '₹300/month',
       features: [
-        '10 Projects',
+        '5 Projects',
         'Up to 5 Users',
         'Collaborative editing',
         'Advanced search',
@@ -238,7 +238,7 @@ const Pricing = () => {
       name: 'Premium',
       price: '₹600/month',
       features: [
-        '12 Projects',
+        '5 Projects',
         '10 Users',
         'AI Chatbot + KB Source',
         'Custom domain',

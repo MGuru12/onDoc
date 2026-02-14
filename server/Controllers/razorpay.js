@@ -12,9 +12,10 @@ const razorpay = new Razorpay({
 });
 // Plan prices in paise (₹1 = 100 paise)
 const PLAN_PRICES = {
-  basic: 10000,    // ₹100
-  standard: 30000, // ₹300
-  premium: 60000   // ₹600
+  basic: 10000,
+  standard: 30000,
+  premium: 60000,
+  extraProjects: 15000
 };
 
 // Middleware to verify plan validity
@@ -23,7 +24,17 @@ const validatePlan = (req, res, next) => {
   if (!PLAN_PRICES[plan]) {
     return res.status(400).json({ error: 'Invalid plan selected' });
   }
-  req.planAmount = PLAN_PRICES[plan];
+
+  if(plan === 'extraProjects' && req.body.addProjCount) {
+    req.planAmount = PLAN_PRICES[plan]*req.body.addProjCount;
+  }
+  else if(plan !== 'extraProjects' && req.body.addProjCount){
+    req.planAmount = PLAN_PRICES[plan]+PLAN_PRICES['extraProjects']*req.body.addProjCount;
+  }
+  else {
+    req.planAmount = PLAN_PRICES[plan];
+  }
+
   next();
 };
 
@@ -39,14 +50,11 @@ const createOrder = async(req, res) => {
         userId: req.body.userId // Pass user ID from frontend
       }
     };
-    console.log("Razorpay initialized");
-    console.log(process.env.RAZORPAY_KEY_ID);
-    console.log(process.env.RAZORPAY_KEY_SECRET);
     const order = await razorpay.orders.create(options);
     res.json({ orderId: order.id, amount: order.amount, currency: order.currency });
   } catch (error) {
     console.error('Razorpay order creation error:', error);
-    res.status(500).json({ error: 'Payment initiation failed' });
+    res.status(500).json({ error: 'Something Went Wrong' });
   }
 }
 
@@ -80,20 +88,22 @@ const verifyPayment = async (req, res) => {
     
     const now = new Date();
     const oneMonthLater = Date.now() + 30 * 24 * 60 * 60 * 1000;
-    console.log("2");
-    console.log(Client.plan);
-    console.log(plan);
     
-    // 🔑 PLAN LOGIC
-    if (Client.plan.activeUntil && Client.plan.activeUntil > now) {
-      // Plan still active → queue next plan
-      Client.plan.nextPlan = plan;
-    } else {
-      // Plan expired or free → activate immediately
-      Client.plan.currentPlan = plan;
-      Client.plan.updatedAt = now;
-      Client.plan.activeUntil = oneMonthLater;
-      Client.plan.nextPlan = null;
+   if(plan === 'extraProjects') {
+      Client.extraProjs += req.body.addProjCount;
+    }
+    else {
+       // 🔑 PLAN LOGIC
+      if (Client.plan.activeUntil && Client.plan.activeUntil > now) {
+        // Plan still active → queue next plan
+        Client.plan.nextPlan = plan;
+      } else {
+        // Plan expired or free → activate immediately
+        Client.plan.currentPlan = plan;
+        Client.plan.updatedAt = now;
+        Client.plan.activeUntil = oneMonthLater;
+        Client.plan.nextPlan = null;
+      }
     }
 
     await Client.save();
@@ -110,4 +120,18 @@ const verifyPayment = async (req, res) => {
   }
 };
 
-module.exports = {verifyPayment, createOrder, validatePlan};
+const getPlanDetails = async (req, res) => {
+  try {
+    const { _id } = req.JWT;
+    const Client = await clientModel.findById(_id);
+    if (!Client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    res.json({ plan: Client.plan, extraProjs: Client.extraProjs });
+  } catch (error) {
+    console.error('Get plan details error:', error);
+    res.status(500).json({ error: 'Failed to retrieve plan details' });
+  }
+};
+
+module.exports = {verifyPayment, createOrder, validatePlan, getPlanDetails};

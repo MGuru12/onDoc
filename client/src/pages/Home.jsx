@@ -383,12 +383,12 @@ const Home = () => {
               {
                 name: 'Standard',
                 price: '₹300/month',
-                features: ['10 Projects', 'Up to 5 Users', 'Internal + External KB', 'Collaborative editing'],
+                features: ['5 Projects', 'Up to 5 Users', 'Internal + External KB', 'Collaborative editing'],
               },
               {
                 name: 'Premium',
                 price: '₹600/month',
-                features: ['12 Projects', '10 Users', 'Internal + External KB', 'AI Chatbot + KB Source'],
+                features: ['5 Projects', '10 Users', 'Internal + External KB', 'AI Chatbot + KB Source'],
               },
             ].map((plan, index) => (
               <div

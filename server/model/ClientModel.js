@@ -41,6 +41,10 @@ const clientSchema = new mongoose.Schema({
             default: null,
             enum: [null, "basic", "standard", "premium"]
         }
+    },
+    extraProjs: {
+        type: Number,
+        default: 0
     }
 });
 
