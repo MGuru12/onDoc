@@ -1,6 +1,6 @@
 // agent.js
 const { createReactAgent } = require("@langchain/langgraph/prebuilt");
-const { ChatGroq } = require("@langchain/groq");
+const { ChatOpenAI } = require("@langchain/openai");
 
 // Import custom tools
 const {
@@ -11,11 +11,14 @@ const {
 
 /**
  * Configure the LLM (Large Language Model)
- * Using Groq's Llama 3.3 70B (or 4 Maverick variant) for speed + smart reasoning
+ * Using NVIDIA NIM (Microservices) with Meta's Llama 3.1 70B
  */
-const llm = new ChatGroq({
-  apiKey: process.env.GROQ_API_KEY,
-  model: "openai/gpt-oss-120b",
+const llm = new ChatOpenAI({
+  apiKey: process.env.NVIDIA_API_KEY,
+  model: "meta/llama-3.1-70b-instruct",
+  configuration: {
+    baseURL: "https://integrate.api.nvidia.com/v1",
+  },
   temperature: 0.3, // Slightly more expressive for emotional / chatty replies
 });
 
