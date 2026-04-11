@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 
+const AI_API_URL = import.meta.env.VITE_AI_URL || 'http://localhost:3000';
+
 const Chatbot = ({ orgId, projId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]); // backend handles this
@@ -32,7 +34,7 @@ const Chatbot = ({ orgId, projId }) => {
     setInputValue('');
 
     try {
-      const response = await axios.post('http://localhost:3000/user/test-agent', {
+      const response = await axios.post(`${AI_API_URL}/user/test-agent`, {
         orgId,
         projId,
         question,
