@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 
-const AI_API_URL = import.meta.env.VITE_AI_URL || 'http://localhost:3000';
+const AI_API_URL = import.meta.env.VITE_AI_URL || (import.meta.env.PROD ? '/ai' : 'http://localhost:3000');
 
 const Chatbot = ({ orgId, projId }) => {
   const [isOpen, setIsOpen] = useState(false);

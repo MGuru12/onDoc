@@ -4,8 +4,10 @@ import { useUser } from './Providers';
 import db from '../db/Dexiedb';
 import { authStore } from './AuthStore';
 
+const baseURL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001');
+
 const api = axios.create({
-  baseURL: process.env.VITE_API_URL,
+  baseURL,
 });
 
 // Axios interceptor setup

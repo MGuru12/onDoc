@@ -1,0 +1,16 @@
+{
+  "name": "ondoc-full",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server",
+    "ai"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=client",
+    "server": "npm start --workspace=server",
+    "ai": "npm start --workspace=ai",
+    "client": "npm run dev --workspace=client"
+  }
+}
