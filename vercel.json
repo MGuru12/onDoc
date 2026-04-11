@@ -2,10 +2,10 @@
   "version": 2,
   "functions": {
     "server/index.js": {
-      "runtime": "vercel-node@latest"
+      "runtime": "nodejs20.x"
     },
     "ai/src/index.js": {
-      "runtime": "vercel-node@latest"
+      "runtime": "nodejs20.x"
     }
   },
   "rewrites": [
