@@ -2,3 +2,4 @@ node_modules
 client/env
 server/env
 ai/.env
+package-lock.json
