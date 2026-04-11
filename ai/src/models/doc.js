@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/';
+
 const docsSchema = new mongoose.Schema({
     proj: {
         type: mongoose.Schema.Types.ObjectId,
@@ -37,14 +39,15 @@ const docsSchema = new mongoose.Schema({
 
 });
 
-const db = (dbName) => {
-    const connection = mongoose.createConnection(`mongodb://localhost:27017/${dbName}`);
-    return connection;
-};
+const connectionCache = new Map();
 
 const docsModel = (dbName) => {
-    const connection = db(dbName);
-    return connection.model('Docs', docsSchema);
+    if (!connectionCache.has(dbName)) {
+        console.log(`[docModel] Creating connection to ${MONGO_URL}${dbName}`);
+        const connection = mongoose.createConnection(`${MONGO_URL}${dbName}`);
+        connectionCache.set(dbName, connection.model('Docs', docsSchema));
+    }
+    return connectionCache.get(dbName);
 };
 
 module.exports = docsModel;

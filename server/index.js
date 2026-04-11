@@ -13,7 +13,18 @@ console.log(`Accessed ${process.env.NODE_ENV} mode env variables`);
 const app = express();
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(bodyparser.json());
-app.use(cors({origin:['http://localhost:5173','https://on-doc-beta.vercel.app'], credentials: true, exposedHeaders: ['x-access-token', 'cookie']}));
+app.use(cors({
+    origin: (origin, callback) => {
+        const allowedOrigins = ['http://localhost:5173', 'https://on-doc-beta.vercel.app'];
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    exposedHeaders: ['x-access-token', 'cookie']
+}));
 app.use(cookieParser());
 const port = process.env.PORT || 3001;
 
@@ -40,6 +51,10 @@ app.use('/admin', admin);
 app.use('/kb', kb);
 app.use('/razorpay', razorpay);
 
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-});
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`Server running on http://localhost:${port}`);
+    });
+}
+
+module.exports = app;
