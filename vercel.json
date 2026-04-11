@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "ai/src/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "server/index.js"
+    },
+    {
+      "source": "/ai/(.*)",
+      "destination": "ai/src/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "client/$1"
+    }
+  ]
+}

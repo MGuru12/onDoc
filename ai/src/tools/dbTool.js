@@ -4,112 +4,135 @@ const { Embeddings } = require("@langchain/core/embeddings");
 const docsModel = require("../models/doc");
 const { FaissStore } = require("@langchain/community/vectorstores/faiss");
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
+const axios = require("axios");
 
 const { convert } = require('html-to-text');
 
-// Simple custom embeddings using TF-IDF-like approach
-class SimpleEmbeddings extends Embeddings {
+let currentContext = { orgId: null, projId: null };
+
+const setAgentContext = (context) => {
+  currentContext = context;
+  console.log('[dbTool] Context set:', context);
+};
+
+const getAgentContext = () => currentContext;
+
+// Cache for vector stores per project
+const vectorStoreCache = new Map();
+
+// NVIDIA NIM embeddings class
+class NVIDIAEmbeddings extends Embeddings {
   constructor() {
     super({});
-    this.vocabulary = new Map();
-    this.idf = new Map();
+    this.apiKey = process.env.NVIDIA_API_KEY;
+    this.baseUrl = "https://integrate.api.nvidia.com/v1";
+    this.model = "NV-Embed-QA-4";
   }
 
-  // Build vocabulary from documents
-  buildVocabulary(documents) {
-    const docCount = documents.length;
-    const termDocCount = new Map();
-
-    // Count document frequency for each term
-    documents.forEach(doc => {
-      const terms = new Set(this.tokenize(doc));
-      terms.forEach(term => {
-        termDocCount.set(term, (termDocCount.get(term) || 0) + 1);
-        if (!this.vocabulary.has(term)) {
-          this.vocabulary.set(term, this.vocabulary.size);
-        }
-      });
-    });
-
-    // Calculate IDF
-    termDocCount.forEach((count, term) => {
-      this.idf.set(term, Math.log(docCount / count));
-    });
-  }
-
-  tokenize(text) {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => word.length > 2);
-  }
-
-  embedQuery(text) {
+  async embedQuery(text) {
     return this.embed(text);
   }
 
-  embedDocuments(documents) {
-    // Build vocabulary if not already built
-    if (this.vocabulary.size === 0) {
-      this.buildVocabulary(documents);
+  async embedDocuments(documents) {
+    const results = [];
+    for (const doc of documents) {
+      const text = typeof doc === "string" ? doc : doc.pageContent;
+      const embedding = await this.embed(text);
+      results.push(embedding);
     }
-    return documents.map(doc => this.embed(doc));
+    return results;
   }
 
-  embed(text) {
-    const tokens = this.tokenize(text);
-    const vector = new Array(Math.min(this.vocabulary.size, 384)).fill(0);
-    
-    // TF-IDF calculation
-    const termFreq = new Map();
-    tokens.forEach(token => {
-      termFreq.set(token, (termFreq.get(token) || 0) + 1);
-    });
-
-    termFreq.forEach((freq, term) => {
-      const idx = this.vocabulary.get(term);
-      if (idx !== undefined && idx < vector.length) {
-        const tf = freq / tokens.length;
-        const idf = this.idf.get(term) || 1;
-        vector[idx] = tf * idf;
-      }
-    });
-
-    // Normalize vector
-    const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
-    return magnitude > 0 ? vector.map(v => v / magnitude) : vector;
+  async embed(text) {
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/embeddings`,
+        {
+          input: text,
+          model: this.model,
+        },
+        {
+          headers: {
+            "Authorization": `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data.data[0].embedding;
+    } catch (error) {
+      console.error('[NVIDIAEmbeddings] Error:', error.response?.data || error.message);
+      throw error;
+    }
   }
 }
 
-// Cache for vector stores per organization
-const vectorStoreCache = new Map();
-const embeddingsCache = new Map();
+// Cache for embeddings instance
+let embeddingsInstance = null;
+const getEmbeddings = () => {
+  if (!embeddingsInstance) {
+    console.log('[Embeddings] Using NVIDIA NIM embeddings');
+    embeddingsInstance = new NVIDIAEmbeddings();
+  }
+  return embeddingsInstance;
+};
 
 const fetchAllDocs = tool(
-  async ({orgId, projId}) => {
+  async () => {
     try {
+      const context = getAgentContext();
+      const { orgId, projId } = context;
+      
+      console.log('[fetchAllDocs] getAgentContext():', context);
+      console.log('[fetchAllDocs] Using org:', orgId, 'proj:', projId);
+      
+      if (!orgId || !projId) {
+        return JSON.stringify({ 
+          error: "Missing context. The system should have provided orgId and projId. Please report this issue."
+        });
+      }
+      
       const Docs = docsModel(orgId);
-      const docs = await Docs.find({ proj: projId }).select('title path visibility _id');
+      let docs;
+      try {
+        docs = await Docs.find({}).select('title path visibility _id proj');
+        console.log('[fetchAllDocs] All docs found:', docs.length);
+        
+        if (docs.length > 0) {
+          docs = docs.filter(doc => {
+            const docProj = doc._doc.proj?.toString() || doc._doc.proj;
+            return docProj === projId;
+          });
+          console.log('[fetchAllDocs] Filtered docs for proj', projId, ':', docs.length);
+        }
+      } catch (err) {
+        console.error('[fetchAllDocs] Query error:', err);
+        return JSON.stringify({ error: "Database query failed: " + err.message });
+      }
+      
       return JSON.stringify(docs);
     }
     catch (error) {
+      console.error('[fetchAllDocs] Error:', error);
       return JSON.stringify({ error: error.message });
     }
   },
   {
     name: "fetchAllDocs",
-    description: "Fetch all documents for a given project in an organization. Returns list of documents with title, path, and visibility.",
-    schema: z.object({
-      orgId: z.string().describe("The organization database name"),
-      projId: z.string().describe("The project ID to fetch documents for"),
-    }),
+    description: "Fetch all documents for the current project. Returns list of documents with title, path, and visibility. The system automatically knows which organization and project to use.",
+    schema: z.object({}),
   }
 );
 
 const fetchSingleDocumentContent = tool(
-  async ({orgId, docId}) => {
+  async ({docId}) => {
     try {
+      const context = getAgentContext();
+      const { orgId } = context;
+      
+      if (!orgId || !docId) {
+        return JSON.stringify({ error: "Organization ID and Document ID are required." });
+      }
+      
       const Docs = docsModel(orgId);
       const doc = await Docs.findById(docId).select('deploy title');
       
@@ -131,25 +154,56 @@ const fetchSingleDocumentContent = tool(
     name: "fetchSingleDocumentContent",
     description: "Fetch the deployed HTML content of a single document by its ID. Use this when you need the full document content.",
     schema: z.object({
-      orgId: z.string().describe("The organization database name"),
       docId: z.string().describe("The document ID to fetch content for"),
     }),
   }
 );
 
 const semanticSearchDocs = tool(
-  async ({orgId, projId, query, topK = 5}) => {
+  async ({query, topK = 5}) => {
     try {
+      const context = getAgentContext();
+      const { orgId, projId } = context;
+      
+      console.log('[semanticSearchDocs] getAgentContext():', context);
+      console.log('[semanticSearchDocs] Using org:', orgId, 'proj:', projId, 'query:', query);
+      
+      if (!orgId || !projId) {
+        return JSON.stringify({ 
+          error: "Missing context. The system should have provided orgId and projId. Please report this issue."
+        });
+      }
+      
       const cacheKey = `${orgId}-${projId}`;
       
       let vectorStore = vectorStoreCache.get(cacheKey);
       
       if (!vectorStore) {
         const Docs = docsModel(orgId);
-        const docs = await Docs.find({ proj: projId }).select('title deploy _id path');
+        console.log('[semanticSearchDocs] Querying docs for org:', orgId, 'proj:', projId);
+        
+        let docs;
+        try {
+          docs = await Docs.find({}).select('title deploy _id path proj');
+          console.log('[semanticSearchDocs] All docs found:', docs.length);
+          
+          if (docs.length > 0) {
+            docs = docs.filter(doc => {
+              const docProj = doc._doc.proj?.toString() || doc._doc.proj;
+              return docProj === projId;
+            });
+            console.log('[semanticSearchDocs] Filtered docs:', docs.length);
+          }
+        } catch (err) {
+          console.error('[semanticSearchDocs] Query error:', err);
+          return JSON.stringify({ error: "Database query failed: " + err.message });
+        }
         
         if (docs.length === 0) {
-          return JSON.stringify({ error: "No documents found in this project" });
+          return JSON.stringify({ 
+            message: "No documents found in this project. Tell the user they need to add some documentation first!",
+            hasDocuments: false 
+          });
         }
         
         const textSplitter = new RecursiveCharacterTextSplitter({
@@ -166,29 +220,65 @@ const semanticSearchDocs = tool(
             preserveNewlines: false,
           });
           
-          const chunks = await textSplitter.createDocuments(
-            [textContent],
-            [{
-              docId: doc._id.toString(),
-              title: doc.title,
-              path: doc.path,
-            }]
-          );
+          console.log('[semanticSearchDocs] Doc title:', doc.title, 'Content length:', textContent.length);
           
-          documents.push(...chunks);
-          allTexts.push(...chunks.map(c => c.pageContent));
+          if (textContent.trim().length > 10) {
+            const chunks = await textSplitter.createDocuments(
+              [textContent],
+              [{
+                docId: doc._id.toString(),
+                title: doc.title,
+                path: doc.path,
+              }]
+            );
+            
+            documents.push(...chunks);
+            allTexts.push(...chunks.map(c => c.pageContent));
+            console.log('[semanticSearchDocs] Created', chunks.length, 'chunks for:', doc.title);
+          } else {
+            console.log('[semanticSearchDocs] Skipping empty doc:', doc.title);
+          }
         }
         
-        // Create embeddings instance and build vocabulary
-        const embeddings = new SimpleEmbeddings();
-        embeddings.buildVocabulary(allTexts);
-        embeddingsCache.set(cacheKey, embeddings);
+        console.log('[semanticSearchDocs] Total chunks:', documents.length);
         
-        vectorStore = await FaissStore.fromDocuments(documents, embeddings);
-        vectorStoreCache.set(cacheKey, vectorStore);
+        if (documents.length === 0) {
+          return JSON.stringify({ 
+            message: "No documents with content found. Tell the user they need to add some documentation first!",
+            hasDocuments: false 
+          });
+        }
+        
+        try {
+          // Use NVIDIA NIM embeddings
+          const embeddings = getEmbeddings();
+          
+          console.log('[semanticSearchDocs] Creating vector store with NVIDIA embeddings...');
+          vectorStore = await FaissStore.fromDocuments(documents, embeddings);
+          vectorStoreCache.set(cacheKey, vectorStore);
+          console.log('[semanticSearchDocs] Vector store created successfully!');
+        } catch (embedErr) {
+          console.error('[semanticSearchDocs] Embeddings error:', embedErr);
+          // Return docs directly as fallback
+          return JSON.stringify({
+            query: query,
+            resultsCount: documents.length,
+            results: documents.map(doc => ({
+              content: doc.pageContent,
+              metadata: doc.metadata,
+              relevance: "medium"
+            })),
+            fallback: true
+          });
+        }
       }
       
       const results = await vectorStore.similaritySearch(query, topK);
+      
+      console.log('[semanticSearchDocs] Search results:', results.length);
+      results.forEach((doc, i) => {
+        console.log(`[semanticSearchDocs] Result ${i + 1}:`, doc.pageContent.substring(0, 100), '...');
+      });
       
       const formattedResults = results.map(doc => ({
         content: doc.pageContent,
@@ -208,10 +298,8 @@ const semanticSearchDocs = tool(
   },
   {
     name: "semanticSearchDocs",
-    description: "Search through all documents in a project using semantic similarity. This is the BEST tool to use when answering questions about document content. Returns the most relevant chunks of information based on the query meaning.",
+    description: "Search through all documents in a project using semantic similarity. This is the BEST tool to use when answering questions about document content. The system automatically knows which organization and project to search. Returns the most relevant chunks of information based on the query meaning.",
     schema: z.object({
-      orgId: z.string().describe("The organization database name"),
-      projId: z.string().describe("The project ID to search within"),
       query: z.string().describe("The search query or question to find relevant content for"),
       topK: z.number().optional().default(5).describe("Number of relevant chunks to return (default: 5)"),
     }),
@@ -228,5 +316,7 @@ module.exports = {
   fetchAllDocs, 
   fetchSingleDocumentContent,
   semanticSearchDocs,
-  invalidateVectorStoreCache 
+  invalidateVectorStoreCache,
+  setAgentContext,
+  getAgentContext
 };
