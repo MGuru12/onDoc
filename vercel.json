@@ -1,25 +1,17 @@
 {
   "version": 2,
-  "functions": {
-    "server/index.js": {
-      "runtime": "nodejs20.x"
-    },
-    "ai/src/index.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "server/index.js"
+      "destination": "/api/main"
     },
     {
       "source": "/ai/(.*)",
-      "destination": "ai/src/index.js"
+      "destination": "/api/ai"
     },
     {
       "source": "/(.*)",
-      "destination": "client/$1"
+      "destination": "/client/$1"
     }
   ]
 }
