@@ -10,8 +10,8 @@
       "destination": "/api/ai"
     },
     {
-      "source": "/(.*)",
-      "destination": "/client/$1"
+      "source": "/((?!api|ai).*)",
+      "destination": "/index.html"
     }
   ]
 }
