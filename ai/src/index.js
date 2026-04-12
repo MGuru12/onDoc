@@ -31,6 +31,8 @@ app.use(async (req, res, next) => {
   }
 });
 
+app.get("/ai", (req, res) => res.json({ message: "AI service connected" }));
+app.use("/ai/user", userRouter);
 app.use("/user", userRouter);
 
 const PORT = process.env.PORT || 3000;

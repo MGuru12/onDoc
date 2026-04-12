@@ -3,15 +3,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/main"
+      "destination": "/api/index"
     },
     {
       "source": "/ai/(.*)",
       "destination": "/api/ai"
     },
     {
-      "source": "/(.*)",
-      "destination": "/client/$1"
+      "source": "/((?!api|ai).*)",
+      "destination": "/index.html"
     }
   ]
 }

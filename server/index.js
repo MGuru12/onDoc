@@ -38,18 +38,22 @@ const admin = require("./Routes/admin");
 const kb = require("./Routes/kb");
 const razorpay = require("./Routes/razorpay");
 
-app.get('/', (req,res)=>{res.json({message: `Welcome to onDoc server and running mode: ${process.env.MODE}`})});
+const router = express.Router();
 
-app.use('/file', fileRoutes);
+router.get('/', (req,res)=>{res.json({message: `Welcome to onDoc server and running mode: ${process.env.MODE}`})});
 
-app.use('/auth', authRoute);
-app.use('/project', projectRoute);
-app.use('/docs', docsRoute);
-app.use('/member', member);
-app.use('/profile', profile);
-app.use('/admin', admin);
-app.use('/kb', kb);
-app.use('/razorpay', razorpay);
+router.use('/file', fileRoutes);
+router.use('/auth', authRoute);
+router.use('/project', projectRoute);
+router.use('/docs', docsRoute);
+router.use('/member', member);
+router.use('/profile', profile);
+router.use('/admin', admin);
+router.use('/kb', kb);
+router.use('/razorpay', razorpay);
+
+app.use('/api', router);
+app.use('/', router);
 
 if (require.main === module) {
     app.listen(port, () => {
