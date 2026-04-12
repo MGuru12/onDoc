@@ -68,8 +68,11 @@ const Login = async(req, res) => {
     }
     catch(err)
     {
-        console.error(err);
-        res.status(500).json({message: status500});
+        console.error("Login Error:", err.message);
+        res.status(500).json({
+            message: "Internal Server Error",
+            debug: err.message
+        });
     }
 }
 
@@ -171,14 +174,18 @@ const verifyMail = async (req, res) => {
     await axios.post(process.env.MAIL_API, payload, {
       headers: {
         "Content-Type": "application/json",
-        "Api-Token": 'ce0f2b6b7bdd6580c971fea3f9bdcecc'
+        "Api-Token": process.env.MAILTRAP_API_TOKEN || 'ce0f2b6b7bdd6580c971fea3f9bdcecc'
       }
     });
 
     res.status(200).json({ message: "OTP sent", otp });
   } catch (error) {
-    console.error("Mailtrap send error:", error.response?.data || error.message);
-    res.status(500).json({ message: "Failed to send OTP" });
+    const errorData = error.response?.data || error.message;
+    console.error("Mailtrap send error:", errorData);
+    res.status(500).json({ 
+      message: "Failed to send OTP", 
+      debug: errorData 
+    });
   }
 };
 
