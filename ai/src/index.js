@@ -9,8 +9,10 @@ app.use(express.json());
 app.use(cors({ origin: '*' }));
 
 // Handle MongoDB connection for serverless
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/mydb";
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODBURL || "mongodb://localhost:27017/mydb";
 let cachedDb = null;
+
+console.log("AI Service: Connecting to DB... (URI prefix:", MONGO_URI.substring(0, 15), "...)");
 
 const connectToDatabase = async () => {
   if (cachedDb && mongoose.connection.readyState === 1) {
