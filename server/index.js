@@ -1,5 +1,9 @@
-if(process.env.NODE_ENV!=='prod') {
-    require("./env/env");
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'prod') {
+    try {
+        require("./env/env");
+    } catch (err) {
+        console.log("Local env.js not found, using system environment variables.");
+    }
 }
 // require("./env/env");
 const express = require("express");
@@ -40,7 +44,7 @@ const razorpay = require("./Routes/razorpay");
 
 const router = express.Router();
 
-router.get('/', (req,res)=>{res.json({message: `Welcome to onDoc server and running mode: ${process.env.MODE}`})});
+router.get('/', (req, res) => { res.json({ message: `Welcome to onDoc server and running mode: ${process.env.MODE}` }) });
 
 router.use('/file', fileRoutes);
 router.use('/auth', authRoute);
