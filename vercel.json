@@ -13,5 +13,11 @@
       "source": "/((?!api|ai).*)",
       "destination": "/index.html"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/auth/cron-cleanup",
+      "schedule": "0 0 * * *"
+    }
   ]
 }

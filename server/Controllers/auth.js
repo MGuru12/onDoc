@@ -2,14 +2,25 @@ const clientModel = require("../model/ClientModel");
 
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
-const axios = require("axios");
 const { status400, status401, status500 } = require("../utils/const");
 const userModel = require("../model/UserModel");
 
-const JWT_access_SECRET = 'your_secret_key';
-const JWT_refresh_SECRET = 'your_secret_key';
+const RefreshTokenModel = require("../model/RefreshToken");
+
+const JWT_access_SECRET = process.env.JWT_ACCESS_SECRET || 'your_access_secret';
+const JWT_refresh_SECRET = process.env.JWT_REFRESH_SECRET || 'your_refresh_secret';
 const accessExpiresIn = "6h";
 const refreshExpiresIn = "30d";
+
+const otpStore = {}; // In-memory OTP storage
+
+const getCookieOptions = () => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" || process.env.NODE_ENV === "prod",
+    sameSite: (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "prod") ? "none" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: "/"
+});
 
 const Register = async(req, res) => {
     try
@@ -54,14 +65,17 @@ const Login = async(req, res) => {
         const tokenData = {_id, usrId: clientData._id, usrType, plan};
         const accessToken = jwt.sign(tokenData, JWT_access_SECRET, {expiresIn: accessExpiresIn});
         const refreshToken = jwt.sign(tokenData, JWT_refresh_SECRET, {expiresIn: refreshExpiresIn});
+        
+        // Store refresh token in database
+        await RefreshTokenModel.create({
+            userId: clientData._id,
+            token: refreshToken,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        });
+
         const data = {_i: clientData._id, n: clientData.username, e: clientData.email, p: plan};
 
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: false,           // explicitly false for local HTTP
-            sameSite: 'lax',         // prevents most CSRF, but works fine with localhost
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        });
+        res.cookie('refreshToken', refreshToken, getCookieOptions());
 
 
         res.setHeader('x-access-token', accessToken).json({message: "Login successfull", data, usrType});
@@ -101,8 +115,13 @@ const refreshAccessToken = async(req, res) => {
     {
         const refreshToken = req.cookies.refreshToken;
         if(!refreshToken) return res.status(404).json({message: "Refresh token not found"});
+
+        // Verify token exists in database
+        const storedToken = await RefreshTokenModel.findOne({ token: refreshToken });
+        if (!storedToken) return res.status(401).json({ message: "Invalid refresh token" });
+
         const decodedData = jwt.verify(refreshToken, JWT_refresh_SECRET);
-        const accessToken = jwt.sign({_id: decodedData._id}, JWT_access_SECRET, {expiresIn: accessExpiresIn});
+        const accessToken = jwt.sign({_id: decodedData._id, usrId: decodedData.usrId, usrType: decodedData.usrType, plan: decodedData.plan}, JWT_access_SECRET, {expiresIn: accessExpiresIn});
 
         res.setHeader('x-access-token', accessToken).json({message: "New access token created successfully"});
     }
@@ -116,12 +135,14 @@ const refreshAccessToken = async(req, res) => {
 
 const Logout = async (req, res) => {
   try {
+    const refreshToken = req.cookies.refreshToken;
+    if (refreshToken) {
+        // Remove from database
+        await RefreshTokenModel.deleteOne({ token: refreshToken });
+    }
+
     // Clear the cookie storing the refresh token
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
-      sameSite: 'lax'
-    });
+    res.clearCookie('refreshToken', getCookieOptions());
 
     return res.status(200).json({ message: "Logout successful" });
   } catch (err) {
@@ -130,63 +151,79 @@ const Logout = async (req, res) => {
   }
 };
 
+const { inviteUser, sendOTP } = require("../utils/mail");
+
 const verifyMail = async (req, res) => {
   const { email, name } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  const html = `
-    <!DOCTYPE html>
-      <html><head><meta charset="UTF-8"><title>OnDoc OTP Verification</title></head>
-      <body style="margin:0; padding:0; background-color:#f4f4f4; font-family: Arial, sans-serif;">
-        <table width="100%" bgcolor="#f4f4f4" cellpadding="0" cellspacing="0">
-          <tr><td>
-            <table align="center" width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="margin:40px auto; border-radius:8px; overflow:hidden;">
-              <tr><td style="background-color:#1e90ff; padding:20px; text-align:center;">
-                <h1 style="color:#ffffff; margin:0; font-size:24px;">OnDoc</h1>
-                <p style="color:#ffffff; margin:5px 0 0; font-size:14px;">Your Knowledgebase Companion</p>
-              </td></tr>
-              <tr><td style="padding:30px 40px;">
-                <h2 style="color:#333333; font-size:20px;">Your OTP Code</h2>
-                <p style="color:#555555; font-size:16px;">Use the following One-Time Password (OTP) to complete your login or verification:</p>
-                <div style="background-color:#f0f8ff; border:1px dashed #1e90ff; border-radius:6px; padding:20px; text-align:center; margin:20px 0;">
-                  <span style="font-size:28px; color:#1e90ff; letter-spacing:4px; font-weight:bold;">${otp}</span>
-                </div>
-                <p style="color:#888888; font-size:14px;">This code is valid for 10 minutes. Do not share it with anyone.</p>
-                <p style="color:#555555; font-size:14px;">If you didn’t request this, please ignore this email.</p>
-              </td></tr>
-              <tr><td style="background-color:#f4f4f4; padding:20px; text-align:center; font-size:12px; color:#aaaaaa;">
-                &copy; 2025 OnDoc. All rights reserved.
-              </td></tr>
-            </table>
-          </td></tr>
-        </table>
-      </body>
-      </html>`;
-
-  const payload = {
-    from: { email: "OnDoc_Dont_Reply@demomailtrap.co", name: "OnDoc - Don't Reply" },
-    to: [{ email, name }],
-    subject: "OTP from OnDoc",
-    html
-  };
-
   try {
-    await axios.post(process.env.MAIL_API, payload, {
-      headers: {
-        "Content-Type": "application/json",
-        "Api-Token": process.env.MAILTRAP_API_TOKEN || 'ce0f2b6b7bdd6580c971fea3f9bdcecc'
-      }
-    });
+    // Store OTP in-memory with 10 minute expiry
+    otpStore[email] = {
+        otp,
+        expiresAt: Date.now() + 10 * 60 * 1000
+    };
 
-    res.status(200).json({ message: "OTP sent", otp });
+    await sendOTP(otp, email, name);
+    res.status(200).json({ message: "OTP sent successfully" }); // No OTP in response
   } catch (error) {
-    const errorData = error.response?.data || error.message;
-    console.error("Mailtrap send error:", errorData);
+    console.error("verifyMail error:", error.message);
     res.status(500).json({ 
       message: "Failed to send OTP", 
-      debug: errorData 
+      debug: error.message 
     });
   }
+};
+
+const validateOTP = async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
+
+    const storedData = otpStore[email];
+
+    if (!storedData) return res.status(400).json({ message: "OTP not found. Please resend." });
+
+    if (Date.now() > storedData.expiresAt) {
+        delete otpStore[email];
+        return res.status(400).json({ message: "OTP expired. Please resend." });
+    }
+
+    if (storedData.otp === otp) {
+        delete otpStore[email]; // Clear OTP after successful verification
+        return res.status(200).json({ message: "Email verified successfully" });
+    } else {
+        return res.status(400).json({ message: "Invalid OTP" });
+    }
+};
+
+const cleanupAll = async (req, res) => {
+    try {
+        console.log("Starting daily cleanup...");
+        
+        // 1. Cleanup In-Memory OTPs
+        const now = Date.now();
+        let otpCount = 0;
+        for (const email in otpStore) {
+            if (now > otpStore[email].expiresAt) {
+                delete otpStore[email];
+                otpCount++;
+            }
+        }
+
+        // 2. Cleanup Expired Refresh Tokens (Handled by Mongo TTL index, but manual fallback)
+        const result = await RefreshTokenModel.deleteMany({ expiresAt: { $lt: new Date() } });
+
+        console.log(`Cleanup complete. Removed ${otpCount} OTPs and ${result.deletedCount} refresh tokens.`);
+        res.status(200).json({ 
+            message: "Cleanup successful", 
+            removedOTPs: otpCount, 
+            removedTokens: result.deletedCount 
+        });
+    } catch (err) {
+        console.error("Cleanup error:", err);
+        res.status(500).json({ message: "Cleanup failed" });
+    }
 };
 
 const verifyInvite = async(req, res) => {
@@ -215,4 +252,4 @@ const verifyInvite = async(req, res) => {
 };
 
 
-module.exports = {Register, Login, verifyAccessToken, refreshAccessToken, Logout, verifyMail, verifyInvite};
+module.exports = {Register, Login, verifyAccessToken, refreshAccessToken, Logout, verifyMail, validateOTP, cleanupAll, verifyInvite};
