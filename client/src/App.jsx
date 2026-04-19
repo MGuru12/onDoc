@@ -15,6 +15,7 @@ import CustomCursor from './utils/CustomCursor';
 import UsrProfile from './pages/protectedRoutes/UsrProfile';
 import Knowledgebase from './pages/Knowledgebase';
 import Pricing from './pages/protectedRoutes/Pricing';
+import Loader from './components/Loader';
 
 function AuthLayout() {
   return <Outlet />;
@@ -30,7 +31,7 @@ function App() {
       <BrowserRouter>
         <div className="min-h-screen flex flex-col relative cursor-none">
           <CustomCursor/>
-
+          <Loader />
 
           <AppBar />
           <main className="flex-grow pt-16 overflow-x-hidden">

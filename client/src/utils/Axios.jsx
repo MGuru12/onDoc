@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useUser } from './Providers';
 import db from '../db/Dexiedb';
 import { authStore } from './AuthStore';
+import { showLoader, hideLoader } from './LoadingService';
 
 const baseURL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001');
 
@@ -12,8 +13,12 @@ const api = axios.create({
 
 // Axios interceptor setup
 api.interceptors.response.use(
-  res => res,
+  res => {
+    hideLoader();
+    return res;
+  },
   async (error) => {
+    hideLoader();
     const originalRequest = error.config;
 
     if (error.response?.status === 498 && !originalRequest._retry) {
@@ -54,11 +59,15 @@ api.interceptors.response.use(
 
 
 api.interceptors.request.use((config) => {
+  showLoader();
   const token = authStore.getAccessToken();
   if (token) {
     config.headers['x-access-token'] = token;
   }
   return config;
+}, (error) => {
+  hideLoader();
+  return Promise.reject(error);
 });
 
 

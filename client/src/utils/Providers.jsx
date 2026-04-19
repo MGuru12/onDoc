@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authStore } from './AuthStore';
 import db from '../db/Dexiedb';
+import { showLoader, hideLoader } from './LoadingService';
 
 const UserContext = createContext();
 
@@ -15,6 +16,7 @@ export function UserProvider({ children }) {
   // 🔄 Hydrate state from IndexedDB on mount
   useEffect(() => {
     const hydrate = async () => {
+      showLoader();
       try {
         const tokenData = await db.tn.toCollection().first();
         const userData = await db.ur.toCollection().first();
@@ -30,6 +32,7 @@ export function UserProvider({ children }) {
         console.error("Global hydration failed:", err);
       } finally {
         setIsHydrating(false);
+        hideLoader();
       }
     };
     hydrate();
