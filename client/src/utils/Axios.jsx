@@ -19,26 +19,34 @@ api.interceptors.response.use(
     if (error.response?.status === 498 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const response = await axios.post(
-        '/auth/Refresh',
-        null,
-        { withCredentials: true }
-      );
+      try {
+        const response = await api.post(
+          '/auth/Refresh',
+          null,
+          { withCredentials: true }
+        );
 
-      const newAccessToken = response.headers['x-access-token'];
+        const newAccessToken = response.headers['x-access-token'];
 
-      // Update store
-      authStore.setAccessToken(newAccessToken);
+        // Update store
+        authStore.setAccessToken(newAccessToken);
 
-      // Update IndexedDB
-      const firstRecord = await db.tn.toCollection().first();
-      if (firstRecord) {
-        await db.tn.update(firstRecord.at, { at: newAccessToken });
+        // Update IndexedDB
+        const firstRecord = await db.tn.toCollection().first();
+        if (firstRecord) {
+          await db.tn.update(firstRecord.at, { at: newAccessToken });
+        }
+
+        originalRequest.headers['x-access-token'] = newAccessToken;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails (logout user immediately)
+        authStore.clear();
+        window.dispatchEvent(new Event('auth-logout'));
+        return Promise.reject(refreshError);
       }
-
-      originalRequest.headers['x-access-token'] = newAccessToken;
-      return api(originalRequest);
     }
+
 
     return Promise.reject(error);
   }
