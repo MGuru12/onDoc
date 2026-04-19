@@ -1,4 +1,4 @@
-const { Login, Register, refreshAccessToken, Logout, verifyMail, verifyInvite } = require("../Controllers/auth");
+const { Login, Register, refreshAccessToken, Logout, verifyMail, validateOTP, cleanupAll, verifyInvite } = require("../Controllers/auth");
 
 const router = require("express").Router();
 
@@ -12,6 +12,8 @@ router.post('/Login', Login);
 router.post('/Refresh', refreshAccessToken);
 
 router.post('/verifyMail', verifyMail);
+router.post('/validateOTP', validateOTP);
+router.get('/cron-cleanup', cleanupAll);
 
 router.post('/logout', Logout);
 

@@ -25,29 +25,29 @@ const Registration = () => {
     }
 
     try {
-      const response = await api.post('/auth/verifyMail', { email, name: uName });
-      const otpCode = response.data.otp;
+      await api.post('/auth/verifyMail', { email, name: uName });
       toast.warn("OTP sent to your email. Valid for 10 minutes.");
-      setGeneratedOtp(otpCode);
       setOtpSentTime(Date.now());
+      setGeneratedOtp('SENT'); // Just a flag to show the OTP input field
     } catch (err) {
       console.error(err);
       toast.warn("Failed to send OTP.");
     }
   };
 
-  const validateOtp = () => {
-    const now = Date.now();
-    if (!generatedOtp || !otpSentTime || now - otpSentTime > 10 * 60 * 1000) {
-      toast.warn("OTP expired. Please resend.");
-      return;
+  const validateOtp = async () => {
+    if (!otp) {
+        toast.warn("Please enter the OTP.");
+        return;
     }
 
-    if (otp === generatedOtp) {
+    try {
+      const response = await api.post('/auth/validateOTP', { email, otp });
       setOtpVerified(true);
-      toast.warn("Email verified successfully!");
-    } else {
-      toast.warn("Invalid OTP.");
+      toast.warn(response.data.message || "Email verified successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.warn(err.response?.data?.message || "Invalid OTP or expired.");
     }
   };
 
