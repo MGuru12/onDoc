@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors({
     origin: (origin, callback) => {
-        const allowedOrigins = ['http://localhost:5173', 'https://on-doc-beta.vercel.app'];
+        const allowedOrigins = ['http://localhost:5173', 'https://on-doc-beta.vercel.app', 'https://ondoc.geniewish.space'];
         if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
             callback(null, true);
         } else {
