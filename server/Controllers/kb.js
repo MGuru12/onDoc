@@ -10,7 +10,10 @@ const getKB = async(req, res) => {
 
         const Proj = projectModel(orgId);
         const Docs = docsModel(orgId);
-        const data = {proj: await Proj.findOne({_id: projId}), docs: await Docs.find({proj: projId})}
+        const allDocs = await Docs.find({proj: projId});
+        // De-duplicate by path to prevent multiple roots or redundant docs
+        const uniqueDocs = Array.from(new Map(allDocs.map(doc => [doc.path, doc])).values());
+        const data = {proj: await Proj.findOne({_id: projId}), docs: uniqueDocs}
         res.status(200).json({data});
 
     }

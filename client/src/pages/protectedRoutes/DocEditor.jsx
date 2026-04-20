@@ -20,6 +20,7 @@ const DocEditor = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [proj, setProj] = useState({});
   const editorRef = useRef(null);
+  const holderRef = useRef(null);
   const navigate = useNavigate();
 
   const fetchDocs = async () => {
@@ -27,10 +28,15 @@ const DocEditor = () => {
       const res = await api.get(`/docs?projId=${projId}`, {
         headers: { 'x-access-token': accessToken },
       });
-      setDocs(res.data.docs);
+      const fetchedDocs = res.data.docs;
+      setDocs(fetchedDocs);
       setProj(res.data.proj[0]);
-      const defaultDoc = res.data.docs.find((d) => d.builtIn) || res.data.docs[0] || null;
-      setSelected(defaultDoc);
+      
+      // Only set initial selected if not already set or if explicitly different
+      const defaultDoc = fetchedDocs.find((d) => d.builtIn) || fetchedDocs[0] || null;
+      if (!selected && defaultDoc) {
+        setSelected(defaultDoc);
+      }
     } catch (err) {
       console.error('Fetch docs failed', err);
     }
@@ -53,38 +59,88 @@ const DocEditor = () => {
   };
 
   useEffect(() => {
+    if (!accessToken) return;
     verifyMember();
     fetchDocs();
     return () => editorRef.current?.destroy?.();
-  }, [projId]);
+  }, [projId, accessToken]);
 
   useEffect(() => {
     if (!selected || previewMode) return;
     let canceled = false;
-    async function init() {
-      editorRef.current?.destroy?.();
-      let data = {};
+
+    const initEditor = async () => {
+      // 1. Properly await destruction of previous instance
+      if (editorRef.current) {
+        try {
+          if (typeof editorRef.current.destroy === 'function') {
+            await editorRef.current.destroy();
+          }
+          editorRef.current = null;
+        } catch (err) {
+          console.error("Error destroying editor instance:", err);
+        }
+      }
+
+      // 2. Stop if component unmounted during destruction
+      if (canceled) return;
+
+      // 3. Clear the container to be absolutely sure no stale DOM remains
+      const holder = holderRef.current;
+      if (holder) holder.innerHTML = '';
+
+      let data = { blocks: [] };
       try {
-        data = typeof selected.content === 'string' ? JSON.parse(selected.content) : selected.content || {};
+        const parsed = typeof selected.content === 'string' ? JSON.parse(selected.content) : selected.content;
+        if (parsed && Array.isArray(parsed.blocks)) {
+          data = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          // Handle cases where content is an object but might be missing blocks array
+          data = { ...parsed, blocks: parsed.blocks || [] };
+        }
       } catch (e) {
         console.warn('Invalid JSON content; starting empty editor', e);
       }
+
+      // 4. Double check cancellation once more before starting
       if (canceled) return;
-      editorRef.current = new EditorJS({
-        holder: 'editorjs',
-        data,
-        tools,
-        autofocus: true,
-        logLevel: 'ERROR',
-        onChange: () => setUnsaved((prev) => new Set(prev).add(selected._id)),
-      });
-    }
-    init();
+
+      try {
+        const editor = new EditorJS({
+          holder: holderRef.current,
+          data,
+          tools,
+          autofocus: true,
+          minHeight: 0,
+          logLevel: 'ERROR',
+          onReady: () => {
+            if (canceled) {
+              editor.destroy();
+            } else {
+              editorRef.current = editor;
+            }
+          },
+          onChange: () => setUnsaved((prev) => new Set(prev).add(selected._id)),
+        });
+      } catch (err) {
+        console.error("EditorJS initialization failed:", err);
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      initEditor();
+    }, 100);
+
     return () => {
       canceled = true;
-      editorRef.current?.destroy?.();
+      clearTimeout(timeout);
+      if (editorRef.current) {
+        // We don't await here because it's a cleanup function
+        editorRef.current.destroy?.();
+        editorRef.current = null;
+      }
     };
-  }, [selected, previewMode]);
+  }, [selected?._id, previewMode]);
 
   const isDuplicate = (title, path, refId, excludeId = null) =>
     docs.some((d) => d.ref === refId && d._id !== excludeId && (d.title === title || d.path === path));
@@ -317,7 +373,12 @@ const DocEditor = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 font-[Quicksand] overflow-hidden">
+    <div className="flex bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 font-[Quicksand] overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
+      <style>{`
+        .codex-editor__redactor {
+          padding-bottom: 64px !important;
+        }
+      `}</style>
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -397,7 +458,7 @@ const DocEditor = () => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-violet-100 rounded-t-3xl md:rounded-none">
+      <div className="flex-1 p-6 overflow-auto bg-violet-100 rounded-t-3xl md:rounded-none">
         {selected ? (
           <div className="max-w-5xl mx-auto space-y-6">
             {/* Control Bar */}
@@ -552,8 +613,9 @@ const DocEditor = () => {
             ) : (
               <div
                 id="editorjs"
+                ref={holderRef}
                 key={selected._id}
-                className="p-8 bg-violet-50 rounded-3xl min-h-96"
+                className="pt-8 px-8 pb-4 bg-violet-50 rounded-3xl min-h-[200px]"
                 style={{
                   boxShadow: 'inset 4px 4px 8px #f0f4ff, inset -4px -4px 8px #ffffff',
                 }}
@@ -565,7 +627,7 @@ const DocEditor = () => {
             👈 Select a document to edit
           </div>
         )}
-      </main>
+      </div>
 
       {/* Context Menu */}
       {renderContextMenu()}

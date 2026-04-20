@@ -1,7 +1,7 @@
 const clientModel = require("../model/ClientModel");
 
 const jwt = require("jsonwebtoken");
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { status400, status401, status500 } = require("../utils/const");
 const userModel = require("../model/UserModel");
 

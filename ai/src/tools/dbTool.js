@@ -8,14 +8,8 @@ const axios = require("axios");
 
 const { convert } = require('html-to-text');
 
-let currentContext = { orgId: null, projId: null };
-
-const setAgentContext = (context) => {
-  currentContext = context;
-  console.log('[dbTool] Context set:', context);
-};
-
-const getAgentContext = () => currentContext;
+// Removed global context to prevent race conditions in concurrent requests.
+// orgId and projId are now passed explicitly to each tool.
 
 // Cache for vector stores per project
 const vectorStoreCache = new Map();
@@ -77,17 +71,13 @@ const getEmbeddings = () => {
 };
 
 const fetchAllDocs = tool(
-  async () => {
+  async ({ orgId, projId }) => {
     try {
-      const context = getAgentContext();
-      const { orgId, projId } = context;
-      
-      console.log('[fetchAllDocs] getAgentContext():', context);
       console.log('[fetchAllDocs] Using org:', orgId, 'proj:', projId);
       
       if (!orgId || !projId) {
         return JSON.stringify({ 
-          error: "Missing context. The system should have provided orgId and projId. Please report this issue."
+          error: "orgId and projId are required parameters."
         });
       }
       
@@ -118,17 +108,17 @@ const fetchAllDocs = tool(
   },
   {
     name: "fetchAllDocs",
-    description: "Fetch all documents for the current project. Returns list of documents with title, path, and visibility. The system automatically knows which organization and project to use.",
-    schema: z.object({}),
+    description: "Fetch all documents for a project. Returns list of documents with title, path, and visibility.",
+    schema: z.object({
+      orgId: z.string().describe("The organization ID"),
+      projId: z.string().describe("The project ID"),
+    }),
   }
 );
 
 const fetchSingleDocumentContent = tool(
-  async ({docId}) => {
+  async ({docId, orgId}) => {
     try {
-      const context = getAgentContext();
-      const { orgId } = context;
-      
       if (!orgId || !docId) {
         return JSON.stringify({ error: "Organization ID and Document ID are required." });
       }
@@ -155,22 +145,19 @@ const fetchSingleDocumentContent = tool(
     description: "Fetch the deployed HTML content of a single document by its ID. Use this when you need the full document content.",
     schema: z.object({
       docId: z.string().describe("The document ID to fetch content for"),
+      orgId: z.string().describe("The organization ID"),
     }),
   }
 );
 
 const semanticSearchDocs = tool(
-  async ({query, topK = 5}) => {
+  async ({query, orgId, projId, topK = 5}) => {
     try {
-      const context = getAgentContext();
-      const { orgId, projId } = context;
-      
-      console.log('[semanticSearchDocs] getAgentContext():', context);
       console.log('[semanticSearchDocs] Using org:', orgId, 'proj:', projId, 'query:', query);
       
       if (!orgId || !projId) {
         return JSON.stringify({ 
-          error: "Missing context. The system should have provided orgId and projId. Please report this issue."
+          error: "orgId and projId are required parameters."
         });
       }
       
@@ -298,9 +285,11 @@ const semanticSearchDocs = tool(
   },
   {
     name: "semanticSearchDocs",
-    description: "Search through all documents in a project using semantic similarity. This is the BEST tool to use when answering questions about document content. The system automatically knows which organization and project to search. Returns the most relevant chunks of information based on the query meaning.",
+    description: "Search through all documents in a project using semantic similarity. returns the most relevant chunks of information based on the query meaning.",
     schema: z.object({
       query: z.string().describe("The search query or question to find relevant content for"),
+      orgId: z.string().describe("The organization ID"),
+      projId: z.string().describe("The project ID"),
       topK: z.number().optional().default(5).describe("Number of relevant chunks to return (default: 5)"),
     }),
   }
@@ -316,7 +305,5 @@ module.exports = {
   fetchAllDocs, 
   fetchSingleDocumentContent,
   semanticSearchDocs,
-  invalidateVectorStoreCache,
-  setAgentContext,
-  getAgentContext
+  invalidateVectorStoreCache
 };

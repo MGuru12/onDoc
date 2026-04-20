@@ -57,7 +57,7 @@ const updateDoc = async (req, res) => {
       {
         doc.visibility = doc.visibility == 'public' ? 'private' : 'public';
         await doc.save();
-        res.json({message: "Visibility updated successfully"});
+        return res.json({message: "Visibility updated successfully"});
       }
 
     const duplicate = await Docs.findOne({ 

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { ChatOpenAI } = require("@langchain/openai");
 const { HumanMessage, SystemMessage, AIMessage } = require("@langchain/core/messages");
-const { semanticSearchDocs, setAgentContext, getAgentContext } = require("../tools/dbTool");
+const { semanticSearchDocs } = require("../tools/dbTool");
 
 // Configure LLM
 const llm = new ChatOpenAI({
@@ -26,16 +26,19 @@ router.post("/test-agent", async (req, res) => {
   }
 
   try {
-    // Set context for database access
-    const contextValue = { orgId: orgId || "unknown-org", projId: projId || "unknown-project" };
-    setAgentContext(contextValue);
-    console.log('Context set:', contextValue);
+    // Context is now passed directly to tool calls
+    console.log('Context for current request:', { orgId, projId });
 
     // First, search for relevant documents
     console.log('Calling semantic search...');
     let searchResults = null;
     try {
-      const searchResult = await semanticSearchDocs.invoke({ query: question, topK: 5 });
+      const searchResult = await semanticSearchDocs.invoke({ 
+        query: question, 
+        orgId: orgId || "unknown-org", 
+        projId: projId || "unknown-project", 
+        topK: 5 
+      });
       console.log('Search result:', searchResult);
       searchResults = JSON.parse(searchResult);
     } catch (searchErr) {

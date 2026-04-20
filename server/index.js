@@ -7,7 +7,6 @@ if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'prod') {
 }
 // require("./env/env");
 const express = require("express");
-const bodyparser = require("body-parser");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
@@ -15,8 +14,8 @@ require("./db/configDB");
 console.log(`Accessed ${process.env.NODE_ENV} mode env variables`);
 
 const app = express();
-app.use(bodyparser.urlencoded({ extended: true }));
-app.use(bodyparser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(cors({
     origin: (origin, callback) => {
         const allowedOrigins = ['http://localhost:5173', 'https://on-doc-beta.vercel.app'];
