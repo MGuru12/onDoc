@@ -17,8 +17,8 @@ const KnowledgeBase = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState({});
 
-  const basePath = `/project/knowledgebase/${projId}/`;
-  const currentPath = decodeURIComponent(location.pathname.replace(basePath, '')) || '/';
+  const basePath = `/project/knowledgebase/${projId}`;
+  const currentPath = decodeURIComponent(location.pathname.toLowerCase().replace(basePath.toLowerCase(), '').replace(/^\/+|\/+$/g, '') || '/');
   
   // Fetch deployed documents
   useEffect(() => {
@@ -152,7 +152,7 @@ const KnowledgeBase = () => {
     });
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 font-[Quicksand] overflow-hidden">
+    <div className="flex bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 font-[Quicksand] overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -213,7 +213,7 @@ const KnowledgeBase = () => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-violet-100 rounded-t-3xl md:rounded-none">
+      <div className="flex-1 p-6 overflow-auto bg-violet-100 rounded-t-3xl md:rounded-none">
         {selected ? (
           <div
             className="max-w-5xl mx-auto p-8 bg-violet-50 rounded-3xl min-h-96"
@@ -228,7 +228,7 @@ const KnowledgeBase = () => {
           </div>
         )}
         <Chatbot orgId={orgId} projId={projId} />
-      </main>
+      </div>
     </div>
   );
 };
